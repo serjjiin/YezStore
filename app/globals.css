@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Josefin+Sans:wght@300;400;600&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --yez-black: #1A1A1A;
+  --yez-white: #FFFFFF;
+  --yez-cream: #F8F6F2;
+  --yez-gray: #6B6B6B;
+  --yez-lightgray: #E8E4DF;
+  --yez-warm: #3D3530;
+}
+
+body {
+  font-family: 'Josefin Sans', sans-serif;
+  background: var(--yez-cream);
+  color: var(--yez-black);
+}
