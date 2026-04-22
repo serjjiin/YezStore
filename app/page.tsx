@@ -76,20 +76,25 @@ export default async function Home({
       }}>
         {products.map((product) => (
           <div key={product.id} style={{ background: 'var(--yez-white)', padding: 12 }}>
-            <div style={{
-              height: 140, background: 'var(--yez-cream)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: 10, fontSize: 13, color: 'var(--yez-gray)',
-              letterSpacing: 1, textTransform: 'uppercase'
-            }}>
-              Foto em breve
-            </div>
-            <div style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 4 }}>
-              {product.artisans?.name}
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, lineHeight: 1.3 }}>
-              {product.title}
-            </div>
+            <Link href={`/produto/${product.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+              <div style={{
+                height: 140, background: 'var(--yez-cream)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 10, fontSize: 13, color: 'var(--yez-gray)',
+                letterSpacing: 1, textTransform: 'uppercase', overflow: 'hidden',
+              }}>
+                {product.image_url
+                  ? <img src={product.image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : 'Foto em breve'
+                }
+              </div>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 4 }}>
+                {product.artisans?.name}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, lineHeight: 1.3 }}>
+                {product.title}
+              </div>
+            </Link>
             <div style={{ fontFamily: "'Dancing Script', cursive", fontSize: 22 }}>
               R$ {Number(product.price).toFixed(2)}
               <AddToCartButton

@@ -133,14 +133,18 @@ export default function Sacola() {
                             </div>
                         </div>
 
-                        <button style={{
-                            width: '100%', background: 'var(--yez-black)', color: '#fff',
+                        <Link href="/checkout" style={{
+                            display: 'block', width: '100%', background: 'var(--yez-black)', color: '#fff',
                             border: 'none', padding: 16, fontSize: 11, letterSpacing: 2.5,
                             textTransform: 'uppercase', fontFamily: "'Josefin Sans', sans-serif",
-                            cursor: 'pointer', marginTop: 8
-                        }}>
-                            Finalizar compra
-                        </button>
+                            textDecoration: 'none', textAlign: 'center', marginTop: 8,
+                            cursor: shipping ? 'pointer' : 'default',
+                            opacity: shipping ? 1 : 0.6,
+                        }}
+                            onClick={(e) => { if (!shipping) e.preventDefault() }}
+                        >
+                            {shipping ? 'Finalizar compra →' : 'Calcule o frete para continuar'}
+                        </Link>
                     </>
                 )}
             </div>

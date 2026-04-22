@@ -120,13 +120,17 @@
 - [x] **Sacola/Carrinho:** Página da sacola + botão de adicionar ao carrinho (`app/sacola/page.tsx`, `app/components/AddToCartButton.tsx`)
 - [x] **Estado do carrinho:** Zustand store (`app/lib/store.ts`)
 - [x] **Cálculo de Frete:** API route + componente integrado ao carrinho (`app/api/frete/route.ts`, `app/components/FreteCalculator.tsx`)
-- [ ] **Checkout transparente:** Integração com SDK do Mercado Pago (Cartão + Pix) — **a fazer**
+- [x] **Checkout transparente:** Formulário de dados + criação de pedido + redirect para Mercado Pago (`app/checkout/page.tsx`, `app/api/checkout/route.ts`)
+- [x] **Páginas de retorno:** Sucesso, pendente (Pix) e falha (`app/checkout/sucesso`, `pendente`, `falha`)
+- [x] **Webhook Mercado Pago:** Atualiza status do pedido automaticamente (`app/api/webhooks/mercadopago/route.ts`)
 
 ### Painel Admin (visão do lojista)
 
-- [ ] **Autenticação:** Rota privada `/admin` com login via Supabase Auth — **a fazer**
-- [ ] **Gestão de catálogo:** CRUD de produtos com upload de fotos para Supabase Storage — **a fazer**
-- [ ] **Gestão de pedidos:** Visualização de vendas e dados do cliente para separação — **a fazer**
+- [x] **Autenticação:** Login via Supabase Auth + proteção de rotas via `proxy.ts`
+- [x] **Dashboard:** Métricas gerais, alertas de estoque baixo e pedidos recentes (`app/admin/page.tsx`)
+- [x] **Gestão de catálogo:** CRUD de produtos com upload de fotos para Supabase Storage (`app/admin/produtos/`)
+- [x] **Gestão de pedidos:** Visualização com filtro por status + atualização manual de status (`app/admin/pedidos/`)
+- [x] **Gestão de artesãs:** CRUD de parceiros com split % e chave Pix (`app/admin/artesaos/`)
 
 ---
 
@@ -167,11 +171,14 @@ Acesse `http://localhost:3000`.
 
 ---
 
-## 9. Próximos Passos
+## 9. Próximos Passos (pós-MVP)
 
-- [ ] Instalar e integrar SDK do Mercado Pago para o checkout
-- [ ] Implementar painel `/admin` com autenticação via Supabase Auth
-- [ ] Criar formulário de cadastro de produtos com upload de fotos
-- [ ] Criar painel de gestão de pedidos no admin
-- [ ] Configurar variáveis de ambiente do Melhor Envio e testar o cálculo de frete em produção
-- [ ] Migrar `MELHOR_ENVIO_URL` para o endpoint de produção antes do lançamento
+- [ ] Criar conta admin no Supabase: Dashboard > Authentication > Users > Add user
+- [ ] Criar bucket `produtos` no Supabase Storage (público) para upload de imagens
+- [ ] Executar `supabase/migrations/001_initial_schema.sql` no SQL Editor do Supabase
+- [ ] Preencher `SUPABASE_SERVICE_ROLE_KEY` no `.env.local`
+- [ ] Preencher `MERCADO_PAGO_ACCESS_TOKEN` (usar `TEST-...` para sandbox)
+- [ ] Preencher `MELHOR_ENVIO_TOKEN` e testar cálculo de frete
+- [ ] Configurar webhook no painel do Mercado Pago apontando para `/api/webhooks/mercadopago`
+- [ ] Trocar `MELHOR_ENVIO_URL` para produção antes do lançamento
+- [ ] Configurar domínio na Vercel e atualizar `NEXT_PUBLIC_BASE_URL`
