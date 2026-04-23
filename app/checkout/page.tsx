@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useCartStore } from '@/app/lib/store'
-import { formatCurrency } from '@/app/lib/format'
+import { formatCurrency, formatCep } from '@/app/lib/format'
 import Link from 'next/link'
 
 const inputStyle: React.CSSProperties = {
@@ -40,7 +40,34 @@ export default function CheckoutPage() {
     state: '',
   })
   const [loading, setLoading] = useState(false)
+  const [cepLoading, setCepLoading] = useState(false)
   const [error, setError] = useState('')
+
+  async function fetchAddress(cep: string) {
+    const digits = cep.replace(/\D/g, '')
+    if (digits.length !== 8) return
+    setCepLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      const data = await res.json()
+      if (data.erro) {
+        setError('CEP não encontrado. Verifique e preencha o endereço manualmente.')
+        return
+      }
+      setForm(prev => ({
+        ...prev,
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+      }))
+    } catch {
+      // falha silenciosa — usuário preenche manualmente
+    } finally {
+      setCepLoading(false)
+    }
+  }
 
   const isTestMode = !process.env.NEXT_PUBLIC_MP_PUBLIC_KEY
 
@@ -197,12 +224,29 @@ export default function CheckoutPage() {
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>CEP *</label>
-            <input name="cep" value={form.cep} onChange={handleChange} style={inputStyle} placeholder="70000-000" required />
+            <input
+              name="cep"
+              value={form.cep}
+              inputMode="numeric"
+              onChange={(e) => {
+                const masked = formatCep(e.target.value)
+                setForm(prev => ({ ...prev, cep: masked }))
+                if (masked.replace(/\D/g, '').length === 8) fetchAddress(masked)
+              }}
+              style={inputStyle}
+              placeholder="70000-000"
+              required
+            />
+            {cepLoading && (
+              <div style={{ fontSize: 11, color: 'var(--yez-gray)', marginTop: 4, letterSpacing: .5 }}>
+                Buscando endereço...
+              </div>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: 10, marginBottom: 14 }}>
             <div>
               <label style={labelStyle}>Rua *</label>
-              <input name="street" value={form.street} onChange={handleChange} style={inputStyle} placeholder="Rua das Flores" required />
+              <input name="street" value={form.street} onChange={handleChange} style={{ ...inputStyle, background: cepLoading ? 'var(--yez-cream)' : 'var(--yez-white)' }} placeholder="Rua das Flores" disabled={cepLoading} required />
             </div>
             <div>
               <label style={labelStyle}>Número *</label>
@@ -215,16 +259,16 @@ export default function CheckoutPage() {
           </div>
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Bairro</label>
-            <input name="neighborhood" value={form.neighborhood} onChange={handleChange} style={inputStyle} placeholder="Centro" />
+            <input name="neighborhood" value={form.neighborhood} onChange={handleChange} style={{ ...inputStyle, background: cepLoading ? 'var(--yez-cream)' : 'var(--yez-white)' }} placeholder="Centro" disabled={cepLoading} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: 10, marginBottom: 28 }}>
             <div>
               <label style={labelStyle}>Cidade</label>
-              <input name="city" value={form.city} onChange={handleChange} style={inputStyle} placeholder="Brasília" />
+              <input name="city" value={form.city} onChange={handleChange} style={{ ...inputStyle, background: cepLoading ? 'var(--yez-cream)' : 'var(--yez-white)' }} placeholder="Brasília" disabled={cepLoading} />
             </div>
             <div>
               <label style={labelStyle}>UF</label>
-              <input name="state" value={form.state} onChange={handleChange} style={inputStyle} placeholder="DF" maxLength={2} />
+              <input name="state" value={form.state} onChange={handleChange} style={{ ...inputStyle, background: cepLoading ? 'var(--yez-cream)' : 'var(--yez-white)' }} placeholder="DF" maxLength={2} disabled={cepLoading} />
             </div>
           </div>
 
