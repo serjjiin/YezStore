@@ -1,6 +1,7 @@
 'use client'
 
 import { useCartStore } from '@/app/lib/store'
+import { formatCurrency } from '@/app/lib/format'
 import FreteCalculator from '@/app/components/FreteCalculator'
 import Link from 'next/link'
 
@@ -28,7 +29,7 @@ export default function Sacola() {
 
             <div style={{ padding: '20px' }}>
                 <Link href="/" style={{
-                    fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+                    fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
                     color: 'var(--yez-gray)', textDecoration: 'none',
                     display: 'inline-block', marginBottom: 20
                 }}>
@@ -41,7 +42,7 @@ export default function Sacola() {
                     Sacola
                 </div>
                 <div style={{
-                    fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+                    fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
                     color: 'var(--yez-gray)', marginBottom: 24
                 }}>
                     {items.length} {items.length === 1 ? 'item' : 'itens'}
@@ -49,13 +50,13 @@ export default function Sacola() {
 
                 {items.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                        <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--yez-gray)' }}>
+                        <div style={{ fontSize: 13, color: 'var(--yez-gray)', marginBottom: 20 }}>
                             Sua sacola está vazia
                         </div>
                         <Link href="/" style={{
-                            display: 'inline-block', marginTop: 20,
+                            display: 'inline-block',
                             background: 'var(--yez-black)', color: '#fff',
-                            padding: '12px 28px', fontSize: 10, letterSpacing: 2,
+                            padding: '12px 28px', fontSize: 11, letterSpacing: 2,
                             textTransform: 'uppercase', textDecoration: 'none',
                             fontFamily: "'Josefin Sans', sans-serif"
                         }}>
@@ -71,29 +72,29 @@ export default function Sacola() {
                                 borderBottom: '1px solid var(--yez-lightgray)', alignItems: 'center'
                             }}>
                                 <div style={{
-                                    width: 56, height: 56, background: 'var(--yez-cream)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: 10, color: 'var(--yez-gray)', flexShrink: 0
+                                    width: 60, height: 60, background: 'var(--yez-cream)',
+                                    flexShrink: 0, overflow: 'hidden',
                                 }}>
-                                    foto
+                                    {item.image_url
+                                        ? <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        : null
+                                    }
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 3 }}>
                                         {item.title}
                                     </div>
-                                    <div style={{ fontSize: 10, color: 'var(--yez-gray)', letterSpacing: .5 }}>
+                                    <div style={{ fontSize: 11, color: 'var(--yez-gray)', letterSpacing: .5 }}>
                                         {item.artisan} · Qtd: {item.quantity}
                                     </div>
                                 </div>
-                                <div style={{ fontFamily: "'Dancing Script', cursive", fontSize: 20 }}>
-                                    R$ {(item.price * item.quantity).toFixed(2)}
+                                <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: .3, flexShrink: 0 }}>
+                                    {formatCurrency(item.price * item.quantity)}
                                 </div>
                                 <button
+                                    className="remove-btn"
                                     onClick={() => removeItem(item.id)}
-                                    style={{
-                                        background: 'none', border: 'none',
-                                        color: 'var(--yez-gray)', fontSize: 18, cursor: 'pointer'
-                                    }}
+                                    aria-label={`Remover ${item.title} da sacola`}
                                 >
                                     ×
                                 </button>
@@ -107,19 +108,19 @@ export default function Sacola() {
                         <div style={{ marginTop: 20, borderTop: '1px solid var(--yez-lightgray)', paddingTop: 16 }}>
                             <div style={{
                                 display: 'flex', justifyContent: 'space-between',
-                                fontSize: 12, color: 'var(--yez-gray)', marginBottom: 6
+                                fontSize: 13, color: 'var(--yez-gray)', marginBottom: 6
                             }}>
                                 <span>Subtotal</span>
-                                <span>R$ {subtotal().toFixed(2)}</span>
+                                <span>{formatCurrency(subtotal())}</span>
                             </div>
                             <div style={{
                                 display: 'flex', justifyContent: 'space-between',
-                                fontSize: 12, color: 'var(--yez-gray)', marginBottom: 12
+                                fontSize: 13, color: 'var(--yez-gray)', marginBottom: 12
                             }}>
                                 <span>Frete</span>
                                 <span>
                                     {shipping
-                                        ? `R$ ${parseFloat(shipping.price).toFixed(2)}`
+                                        ? formatCurrency(parseFloat(shipping.price))
                                         : 'Calcule acima'}
                                 </span>
                             </div>
@@ -129,7 +130,7 @@ export default function Sacola() {
                                 padding: '12px 0', borderTop: '1.5px solid var(--yez-black)',
                             }}>
                                 <span>Total</span>
-                                <span>R$ {total().toFixed(2)}</span>
+                                <span>{formatCurrency(total())}</span>
                             </div>
                         </div>
 
@@ -139,7 +140,7 @@ export default function Sacola() {
                             textTransform: 'uppercase', fontFamily: "'Josefin Sans', sans-serif",
                             textDecoration: 'none', textAlign: 'center', marginTop: 8,
                             cursor: shipping ? 'pointer' : 'default',
-                            opacity: shipping ? 1 : 0.6,
+                            opacity: shipping ? 1 : 0.5,
                         }}
                             onClick={(e) => { if (!shipping) e.preventDefault() }}
                         >

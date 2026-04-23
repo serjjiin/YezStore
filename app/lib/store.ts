@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 
-type CartItem = {
+export type CartItem = {
     id: string
     title: string
     price: number
     quantity: number
     artisan: string
+    image_url?: string
 }
 
 export type ShippingOption = {

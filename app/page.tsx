@@ -1,6 +1,8 @@
 import { supabase } from '@/app/lib/supabase'
+import { formatCurrency } from '@/app/lib/format'
 import AddToCartButton from './components/AddToCartButton'
 import CategoryFilter from './components/CategoryFilter'
+import CartLink from './components/CartLink'
 import Link from 'next/link'
 
 export default async function Home({
@@ -41,12 +43,7 @@ export default async function Home({
         <span style={{ fontFamily: "'Dancing Script', cursive", fontSize: 26 }}>
           Yez Store
         </span>
-        <Link href="/sacola" style={{
-          fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
-          color: 'var(--yez-gray)', textDecoration: 'none'
-        }}>
-          Sacola
-        </Link>
+        <CartLink />
       </nav>
 
       {/* Hero */}
@@ -54,13 +51,13 @@ export default async function Home({
         background: 'var(--yez-black)', color: '#fff',
         padding: '40px 24px', textAlign: 'center'
       }}>
-        <div style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', marginBottom: 12 }}>
+        <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', marginBottom: 12 }}>
           Loja Colaborativa
         </div>
         <div style={{ fontFamily: "'Dancing Script', cursive", fontSize: 52, marginBottom: 8 }}>
           Yez Store
         </div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', letterSpacing: .5, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,.6)', letterSpacing: .5, lineHeight: 1.6 }}>
           Peças únicas de artesãs locais.<br />
           Cada compra apoia diretamente quem faz.
         </div>
@@ -75,37 +72,43 @@ export default async function Home({
         gap: 1, background: 'var(--yez-lightgray)', margin: '20px 0'
       }}>
         {products.map((product) => (
-          <div key={product.id} style={{ background: 'var(--yez-white)', padding: 12 }}>
+          <div key={product.id} className="product-card">
             <Link href={`/produto/${product.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-              <div style={{
-                height: 140, background: 'var(--yez-cream)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 10, fontSize: 13, color: 'var(--yez-gray)',
-                letterSpacing: 1, textTransform: 'uppercase', overflow: 'hidden',
-              }}>
+              <div
+                className="product-image"
+                style={{
+                  width: '100%', aspectRatio: '1 / 1',
+                  background: 'var(--yez-cream)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 10, overflow: 'hidden',
+                  fontSize: 12, color: 'var(--yez-gray)',
+                  letterSpacing: 1, textTransform: 'uppercase',
+                }}
+              >
                 {product.image_url
                   ? <img src={product.image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : 'Foto em breve'
                 }
               </div>
-              <div style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 4 }}>
+              <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 4 }}>
                 {product.artisans?.name}
               </div>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, lineHeight: 1.3 }}>
                 {product.title}
               </div>
             </Link>
-            <div style={{ fontFamily: "'Dancing Script', cursive", fontSize: 22 }}>
-              R$ {Number(product.price).toFixed(2)}
-              <AddToCartButton
-                product={{
-                  id: product.id,
-                  title: product.title,
-                  price: Number(product.price),
-                  artisan: product.artisans?.name ?? '',
-                }}
-              />
+            <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: .5, marginBottom: 2 }}>
+              {formatCurrency(Number(product.price))}
             </div>
+            <AddToCartButton
+              product={{
+                id: product.id,
+                title: product.title,
+                price: Number(product.price),
+                artisan: product.artisans?.name ?? '',
+                image_url: product.image_url ?? undefined,
+              }}
+            />
           </div>
         ))}
       </div>
