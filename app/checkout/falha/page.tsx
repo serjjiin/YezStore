@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import CheckoutNav from '@/app/checkout/CheckoutNav'
 
 export default function FalhaPage() {
