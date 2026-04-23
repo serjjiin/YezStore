@@ -11,16 +11,43 @@ type Props = {
     artisan: string
     image_url?: string
   }
+  stock?: number
 }
 
-export default function AddToCartButton({ product }: Props) {
+export default function AddToCartButton({ product, stock }: Props) {
   const addItem = useCartStore((state) => state.addItem)
   const [added, setAdded] = useState(false)
 
+  const esgotado = stock !== undefined && stock <= 0
+
   function handleAdd() {
+    if (esgotado) return
     addItem({ ...product, quantity: 1 })
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
+  }
+
+  if (esgotado) {
+    return (
+      <button
+        disabled
+        style={{
+          background: 'var(--yez-lightgray)',
+          color: 'var(--yez-gray)',
+          border: 'none',
+          padding: '12px 20px',
+          fontSize: 10,
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          fontFamily: "'Josefin Sans', sans-serif",
+          cursor: 'not-allowed',
+          width: '100%',
+          marginTop: 8,
+        }}
+      >
+        Esgotado
+      </button>
+    )
   }
 
   return (

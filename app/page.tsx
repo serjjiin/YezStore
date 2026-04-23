@@ -108,6 +108,7 @@ export default async function Home({
                 artisan: product.artisans?.name ?? '',
                 image_url: product.image_url ?? undefined,
               }}
+              stock={product.stock_quantity}
             />
           </div>
         ))}

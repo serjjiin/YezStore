@@ -121,6 +121,13 @@ export default async function ProdutoPage({ params }: Props) {
                     ))}
                 </div>
 
+                {/* Estoque */}
+                {product.stock_quantity <= 3 && product.stock_quantity > 0 && (
+                    <div style={{ fontSize: 11, color: '#b85c00', letterSpacing: .5, marginBottom: 12 }}>
+                        Restam apenas {product.stock_quantity} {product.stock_quantity === 1 ? 'unidade' : 'unidades'}
+                    </div>
+                )}
+
                 {/* Botão */}
                 <AddToCartButton
                     product={{
@@ -130,6 +137,7 @@ export default async function ProdutoPage({ params }: Props) {
                         artisan: product.artisans?.name ?? '',
                         image_url: product.image_url ?? undefined,
                     }}
+                    stock={product.stock_quantity}
                 />
             </div>
         </main>
