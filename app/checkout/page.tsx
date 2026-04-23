@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useCartStore } from '@/app/lib/store'
 import { formatCurrency } from '@/app/lib/format'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -28,8 +27,6 @@ const labelStyle: React.CSSProperties = {
 
 export default function CheckoutPage() {
   const { items, shipping, subtotal, total, clearCart } = useCartStore()
-  const router = useRouter()
-
   const [form, setForm] = useState({
     name: '',
     email: '',

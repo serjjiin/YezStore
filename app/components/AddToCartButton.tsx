@@ -27,7 +27,7 @@ export default function AddToCartButton({ product }: Props) {
     <button
       onClick={handleAdd}
       style={{
-        background: added ? '#2d6a2d' : 'var(--yez-black)',
+        background: added ? 'var(--yez-success)' : 'var(--yez-black)',
         color: '#fff',
         border: 'none',
         padding: '12px 20px',
