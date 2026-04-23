@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
+## Início de sessão
+
+Ao iniciar uma nova conversa, leia `PROJETO.md` para entender o estado atual do projeto — o que foi implementado, o que está pendente e as decisões tomadas. Mantenha `PROJETO.md` atualizado ao final de cada conjunto de mudanças significativas.
+
 ## Comandos
 
 ```bash

@@ -2,13 +2,7 @@
 
 import { useState } from 'react'
 import { useCartStore, type ShippingOption } from '@/app/lib/store'
-import { formatCurrency } from '@/app/lib/format'
-
-function formatCep(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 8)
-  if (digits.length > 5) return `${digits.slice(0, 5)}-${digits.slice(5)}`
-  return digits
-}
+import { formatCurrency, formatCep } from '@/app/lib/format'
 
 export default function FreteCalculator() {
   const [cep, setCep] = useState('')
