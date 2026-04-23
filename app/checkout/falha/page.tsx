@@ -1,17 +1,10 @@
 import Link from 'next/link'
+import CheckoutNav from '@/app/checkout/CheckoutNav'
 
 export default function FalhaPage() {
   return (
     <main>
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '12px 20px', borderBottom: '1px solid var(--yez-lightgray)',
-        background: 'var(--yez-white)'
-      }}>
-        <Link href="/" style={{ fontFamily: "'Dancing Script', cursive", fontSize: 26, color: 'var(--yez-black)', textDecoration: 'none' }}>
-          Yez Store
-        </Link>
-      </nav>
+      <CheckoutNav />
 
       <div style={{ textAlign: 'center', padding: '60px 24px', maxWidth: 400, margin: '0 auto' }}>
         <div style={{

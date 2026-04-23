@@ -5,6 +5,7 @@ import { useCartStore } from '@/app/lib/store'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+import CheckoutNav from '@/app/checkout/CheckoutNav'
 
 function SucessoContent() {
   const { clearCart } = useCartStore()
@@ -79,15 +80,7 @@ function SucessoContent() {
 export default function SucessoPage() {
   return (
     <main>
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '12px 20px', borderBottom: '1px solid var(--yez-lightgray)',
-        background: 'var(--yez-white)'
-      }}>
-        <Link href="/" style={{ fontFamily: "'Dancing Script', cursive", fontSize: 26, color: 'var(--yez-black)', textDecoration: 'none' }}>
-          Yez Store
-        </Link>
-      </nav>
+      <CheckoutNav />
       <Suspense>
         <SucessoContent />
       </Suspense>
