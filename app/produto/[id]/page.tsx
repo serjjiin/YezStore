@@ -1,5 +1,7 @@
 import { supabase } from '@/app/lib/supabase'
+import { formatCurrency } from '@/app/lib/format'
 import AddToCartButton from '@/app/components/AddToCartButton'
+import CartLink from '@/app/components/CartLink'
 import Link from 'next/link'
 
 type Props = {
@@ -16,7 +18,14 @@ export default async function ProdutoPage({ params }: Props) {
         .single()
 
     if (error || !product) {
-        return <p>Produto não encontrado.</p>
+        return (
+            <main>
+                <div style={{ textAlign: 'center', padding: '60px 20px', fontSize: 13, color: 'var(--yez-gray)' }}>
+                    Produto não encontrado.{' '}
+                    <Link href="/" style={{ color: 'var(--yez-black)' }}>Voltar à loja</Link>
+                </div>
+            </main>
+        )
     }
 
     return (
@@ -33,16 +42,11 @@ export default async function ProdutoPage({ params }: Props) {
                 }}>
                     Yez Store
                 </Link>
-                <Link href="/sacola" style={{
-                    fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
-                    color: 'var(--yez-gray)', textDecoration: 'none'
-                }}>
-                    Sacola
-                </Link>
+                <CartLink />
             </nav>
 
             <Link href="/" style={{
-                fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+                fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
                 color: 'var(--yez-gray)', textDecoration: 'none',
                 display: 'inline-block', padding: '16px 20px'
             }}>
@@ -51,11 +55,11 @@ export default async function ProdutoPage({ params }: Props) {
 
             {/* Imagem */}
             <div style={{
-                width: '100%', height: 240,
+                width: '100%', aspectRatio: '4 / 3',
                 background: 'var(--yez-cream)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 13, letterSpacing: 1, textTransform: 'uppercase',
-                color: 'var(--yez-gray)'
+                color: 'var(--yez-gray)', overflow: 'hidden',
             }}>
                 {product.image_url
                     ? <img src={product.image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -66,22 +70,22 @@ export default async function ProdutoPage({ params }: Props) {
             <div style={{ padding: '20px' }}>
                 {/* Artesã */}
                 <div style={{
-                    fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+                    fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
                     color: 'var(--yez-gray)', marginBottom: 6
                 }}>
                     {product.artisans?.name}
                 </div>
 
                 {/* Nome */}
-                <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: .5, marginBottom: 6, lineHeight: 1.3 }}>
+                <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: .5, marginBottom: 8, lineHeight: 1.3 }}>
                     {product.title}
                 </div>
 
                 {/* Preço */}
                 <div style={{
-                    fontFamily: "'Dancing Script', cursive", fontSize: 32, marginBottom: 16
+                    fontFamily: "'Dancing Script', cursive", fontSize: 34, marginBottom: 16
                 }}>
-                    R$ {Number(product.price).toFixed(2)}
+                    {formatCurrency(Number(product.price))}
                 </div>
 
                 {/* Divisor */}
@@ -89,7 +93,7 @@ export default async function ProdutoPage({ params }: Props) {
 
                 {/* Descrição */}
                 <div style={{
-                    fontSize: 13, color: 'var(--yez-gray)', lineHeight: 1.7,
+                    fontSize: 14, color: 'var(--yez-gray)', lineHeight: 1.7,
                     marginBottom: 16, letterSpacing: .3
                 }}>
                     {product.description}
@@ -107,7 +111,7 @@ export default async function ProdutoPage({ params }: Props) {
                         { label: 'Feito', value: 'À mão' },
                     ].map(({ label, value }) => (
                         <div key={label} style={{ background: 'var(--yez-cream)', padding: '10px 12px' }}>
-                            <div style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 3 }}>
+                            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 3 }}>
                                 {label}
                             </div>
                             <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: .3 }}>
@@ -124,6 +128,7 @@ export default async function ProdutoPage({ params }: Props) {
                         title: product.title,
                         price: Number(product.price),
                         artisan: product.artisans?.name ?? '',
+                        image_url: product.image_url ?? undefined,
                     }}
                 />
             </div>

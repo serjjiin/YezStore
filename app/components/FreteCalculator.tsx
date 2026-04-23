@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useCartStore, type ShippingOption } from '@/app/lib/store'
+import { formatCurrency } from '@/app/lib/format'
 
 function formatCep(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 8)
@@ -59,7 +60,7 @@ export default function FreteCalculator() {
   return (
     <div style={{ marginTop: 24 }}>
       <div style={{
-        fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+        fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
         color: 'var(--yez-gray)', marginBottom: 10
       }}>
         Calcular frete
@@ -133,11 +134,11 @@ export default function FreteCalculator() {
                   </div>
                 </div>
                 <div style={{
-                  fontFamily: "'Dancing Script', cursive", fontSize: 18,
+                  fontSize: 14, fontWeight: 600,
                   color: selected ? '#fff' : 'var(--yez-black)',
                   flexShrink: 0, marginLeft: 12,
                 }}>
-                  R$ {parseFloat(option.price).toFixed(2)}
+                  {formatCurrency(parseFloat(option.price))}
                 </div>
               </button>
             )

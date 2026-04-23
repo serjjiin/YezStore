@@ -1,37 +1,47 @@
 'use client'
 
+import { useState } from 'react'
 import { useCartStore } from '@/app/lib/store'
 
 type Props = {
-    product: {
-        id: string
-        title: string
-        price: number
-        artisan: string
-    }
+  product: {
+    id: string
+    title: string
+    price: number
+    artisan: string
+    image_url?: string
+  }
 }
 
 export default function AddToCartButton({ product }: Props) {
-    const addItem = useCartStore((state) => state.addItem)
+  const addItem = useCartStore((state) => state.addItem)
+  const [added, setAdded] = useState(false)
 
-    return (
-        <button
-            onClick={() => addItem({ ...product, quantity: 1 })}
-            style={{
-                background: 'var(--yez-black)',
-                color: '#fff',
-                border: 'none',
-                padding: '10px 20px',
-                fontSize: 10,
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-                fontFamily: "'Josefin Sans', sans-serif",
-                cursor: 'pointer',
-                width: '100%',
-                marginTop: 8,
-            }}
-        >
-            Adicionar à sacola
-        </button>
-    )
+  function handleAdd() {
+    addItem({ ...product, quantity: 1 })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 1500)
+  }
+
+  return (
+    <button
+      onClick={handleAdd}
+      style={{
+        background: added ? 'var(--yez-success)' : 'var(--yez-black)',
+        color: '#fff',
+        border: 'none',
+        padding: '12px 20px',
+        fontSize: 10,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        fontFamily: "'Josefin Sans', sans-serif",
+        cursor: 'pointer',
+        width: '100%',
+        marginTop: 8,
+        transition: 'background 0.2s ease',
+      }}
+    >
+      {added ? 'Adicionado ✓' : 'Adicionar à sacola'}
+    </button>
+  )
 }
