@@ -1,7 +1,7 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 import { formatCurrency } from '@/app/lib/format'
 import Link from 'next/link'
-import ToggleProductButton from './DeleteProductButton'
+import ToggleProductButton from './ToggleProductButton'
 
 export default async function AdminProdutosPage() {
   const supabase = createSupabaseServiceClient()
