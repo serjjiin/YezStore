@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 // Cliente Supabase para Server Components, Route Handlers e Server Actions.
@@ -27,7 +28,6 @@ export async function createSupabaseServerClient() {
 // Cliente com service role — bypass de RLS. NUNCA expor ao cliente.
 // Usar apenas em Route Handlers e server-side code de admin.
 export function createSupabaseServiceClient() {
-  const { createClient } = require('@supabase/supabase-js')
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
