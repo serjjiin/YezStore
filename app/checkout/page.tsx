@@ -288,6 +288,27 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {/* Selos de confiança */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 1, background: 'var(--yez-lightgray)', marginBottom: 20
+          }}>
+            {[
+              { title: 'Pagamento', sub: '100% seguro' },
+              { title: 'Envio', sub: 'Rastreado' },
+              { title: 'Produto', sub: 'Feito à mão' },
+            ].map(({ title, sub }) => (
+              <div key={title} style={{ background: 'var(--yez-cream)', padding: '12px 8px', textAlign: 'center' }}>
+                <div style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, color: 'var(--yez-black)', marginBottom: 2 }}>
+                  {title}
+                </div>
+                <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--yez-gray)' }}>
+                  {sub}
+                </div>
+              </div>
+            ))}
+          </div>
+
           {error && (
             <div style={{ background: '#FFE8E8', border: '1px solid #FF4444', padding: '10px 14px', fontSize: 12, marginBottom: 16, color: '#CC0000' }}>
               {error}

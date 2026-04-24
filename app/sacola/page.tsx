@@ -6,7 +6,7 @@ import FreteCalculator from '@/app/components/FreteCalculator'
 import Link from 'next/link'
 
 export default function Sacola() {
-    const { items, removeItem, shipping, subtotal, total } = useCartStore()
+    const { items, removeItem, updateQuantity, shipping, subtotal, total } = useCartStore()
 
     return (
         <main>
@@ -81,11 +81,28 @@ export default function Sacola() {
                                     }
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 3 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
                                         {item.title}
                                     </div>
-                                    <div style={{ fontSize: 11, color: 'var(--yez-gray)', letterSpacing: .5 }}>
-                                        {item.artisan} · Qtd: {item.quantity}
+                                    <div style={{ fontSize: 11, color: 'var(--yez-gray)', letterSpacing: .5, marginBottom: 8 }}>
+                                        {item.artisan}
+                                    </div>
+                                    <div className="qty-control">
+                                        <button
+                                            className="qty-btn"
+                                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                            aria-label="Diminuir quantidade"
+                                        >
+                                            −
+                                        </button>
+                                        <span className="qty-value">{item.quantity}</span>
+                                        <button
+                                            className="qty-btn"
+                                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                            aria-label="Aumentar quantidade"
+                                        >
+                                            +
+                                        </button>
                                     </div>
                                 </div>
                                 <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: .3, flexShrink: 0 }}>

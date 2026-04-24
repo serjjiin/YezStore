@@ -68,3 +68,131 @@ input:focus-visible {
 .remove-btn:hover {
   color: #c0392b;
 }
+
+/* ── Grid responsivo de produtos ── */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--yez-lightgray);
+}
+
+@media (min-width: 640px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── Hero ── */
+.hero-section {
+  background: var(--yez-black);
+  color: #fff;
+}
+
+.hero-text {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-mosaic {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hero-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 420px;
+  }
+
+  .hero-text {
+    padding: 60px 56px;
+    text-align: left;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .hero-mosaic {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    overflow: hidden;
+  }
+}
+
+/* ── Página de produto — 2 colunas no desktop ── */
+.product-detail-grid {
+  display: block;
+}
+
+.product-detail-info-col {
+  padding: 20px;
+}
+
+@media (min-width: 768px) {
+  .product-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .product-detail-image-col {
+    position: sticky;
+    top: 57px;
+  }
+
+  .product-detail-info-col {
+    padding: 40px 48px;
+  }
+}
+
+/* ── Controle de quantidade na sacola ── */
+.qty-control {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--yez-lightgray);
+}
+
+.qty-btn {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--yez-black);
+  font-family: 'Josefin Sans', sans-serif;
+  transition: background 0.15s ease;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: var(--yez-cream);
+}
+
+.qty-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.qty-value {
+  width: 36px;
+  text-align: center;
+  font-size: 13px;
+  font-family: 'Josefin Sans', sans-serif;
+  border-left: 1px solid var(--yez-lightgray);
+  border-right: 1px solid var(--yez-lightgray);
+  height: 32px;
+  line-height: 32px;
+}
