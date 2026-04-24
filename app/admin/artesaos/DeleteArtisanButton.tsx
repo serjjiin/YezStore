@@ -15,12 +15,13 @@ export default function DeleteArtisanButton({ id }: { id: string }) {
     setLoading(true)
     setError(null)
     const { error } = await supabase.from('artisans').delete().eq('id', id)
-    setLoading(false)
     if (error) {
       setError(error.message)
+      setLoading(false)
       return
     }
     router.refresh()
+    setLoading(false)
   }
 
   return (

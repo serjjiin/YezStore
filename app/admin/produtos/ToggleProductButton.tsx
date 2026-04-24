@@ -21,12 +21,13 @@ export default function ToggleProductButton({ id, isActive }: { id: string; isAc
       .from('products')
       .update({ is_active: !isActive })
       .eq('id', id)
-    setLoading(false)
     if (error) {
       setError(error.message)
+      setLoading(false)
       return
     }
     router.refresh()
+    setLoading(false)
   }
 
   return (
