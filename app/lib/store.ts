@@ -22,6 +22,7 @@ type CartStore = {
     shipping: ShippingOption | null
     addItem: (item: CartItem) => void
     removeItem: (id: string) => void
+    updateQuantity: (id: string, quantity: number) => void
     clearCart: () => void
     setShipping: (option: ShippingOption | null) => void
     subtotal: () => number
@@ -47,6 +48,14 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
     removeItem: (id) => {
         set({ items: get().items.filter((i) => i.id !== id) })
+    },
+
+    updateQuantity: (id, quantity) => {
+        if (quantity <= 0) {
+            set({ items: get().items.filter((i) => i.id !== id) })
+        } else {
+            set({ items: get().items.map((i) => i.id === id ? { ...i, quantity } : i) })
+        }
     },
 
     clearCart: () => set({ items: [], shipping: null }),

@@ -12,20 +12,24 @@ export default async function Home({
 }) {
   const { categoria = '' } = await searchParams
 
-  let query = supabase
-    .from('products')
-    .select(`
-      *,
-      artisans ( name )
-    `)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-
-  if (categoria) {
-    query = query.eq('category', categoria)
-  }
-
-  const { data: products, error } = await query
+  const [{ data: heroProducts }, { data: products, error }] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, image_url, title')
+      .eq('is_active', true)
+      .not('image_url', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(4),
+    (() => {
+      let q = supabase
+        .from('products')
+        .select('*, artisans(name)')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+      if (categoria) q = q.eq('category', categoria)
+      return q
+    })(),
+  ])
 
   if (error) {
     console.error(error)
@@ -47,31 +51,72 @@ export default async function Home({
       </nav>
 
       {/* Hero */}
-      <div style={{
-        background: 'var(--yez-black)', color: '#fff',
-        padding: '40px 24px', textAlign: 'center'
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', marginBottom: 12 }}>
-          Loja Colaborativa
+      <div className="hero-section">
+        <div className="hero-text">
+          <div style={{
+            fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
+            color: 'rgba(255,255,255,.4)', marginBottom: 16
+          }}>
+            Loja Colaborativa · Brasília, DF
+          </div>
+          <div style={{
+            fontFamily: "'Dancing Script', cursive", fontSize: 56,
+            lineHeight: 1.1, marginBottom: 16
+          }}>
+            Yez Store
+          </div>
+          <div style={{
+            fontSize: 14, color: 'rgba(255,255,255,.6)',
+            letterSpacing: .5, lineHeight: 1.8, marginBottom: 32
+          }}>
+            Peças únicas criadas por artesãs locais.<br />
+            Cada compra apoia diretamente quem faz.
+          </div>
+          <a href="#produtos" style={{
+            display: 'inline-block',
+            border: '1px solid rgba(255,255,255,.35)',
+            color: '#fff', padding: '11px 28px',
+            fontSize: 10, letterSpacing: 2.5,
+            textTransform: 'uppercase', textDecoration: 'none',
+          }}>
+            Ver coleção
+          </a>
         </div>
-        <div style={{ fontFamily: "'Dancing Script', cursive", fontSize: 52, marginBottom: 8 }}>
-          Yez Store
-        </div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,.6)', letterSpacing: .5, lineHeight: 1.6 }}>
-          Peças únicas de artesãs locais.<br />
-          Cada compra apoia diretamente quem faz.
+        <div className="hero-mosaic">
+          {(heroProducts ?? []).map((p) => (
+            <Link key={p.id} href={`/produto/${p.id}`} style={{ overflow: 'hidden', display: 'block' }}>
+              <img
+                src={p.image_url!}
+                alt={p.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }}
+                onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              />
+            </Link>
+          ))}
+          {Array.from({ length: Math.max(0, 4 - (heroProducts?.length ?? 0)) }).map((_, i) => (
+            <div key={`empty-${i}`} style={{ background: 'rgba(255,255,255,0.04)' }} />
+          ))}
         </div>
       </div>
 
       {/* Filtro de categorias */}
-      <CategoryFilter activeCategory={categoria} />
+      <div id="produtos">
+        <CategoryFilter activeCategory={categoria} />
+      </div>
+
+      {/* Contagem */}
+      <div style={{
+        padding: '0 20px 12px',
+        fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)'
+      }}>
+        {products?.length ?? 0} {(products?.length ?? 0) === 1 ? 'produto' : 'produtos'}
+        {categoria ? ` em ${categoria}` : ''}
+      </div>
 
       {/* Grid de produtos */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: 1, background: 'var(--yez-lightgray)', margin: '20px 0'
-      }}>
-        {products.map((product) => (
+      <div className="product-grid" style={{ margin: '0 0 40px' }}>
+        {products?.map((product) => (
           <div key={product.id} className="product-card">
             <Link href={`/produto/${product.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
               <div

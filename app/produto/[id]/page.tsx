@@ -13,7 +13,7 @@ export default async function ProdutoPage({ params }: Props) {
 
     const { data: product, error } = await supabase
         .from('products')
-        .select(`*, artisans ( name )`)
+        .select('*, artisans(name)')
         .eq('id', id)
         .single()
 
@@ -27,6 +27,16 @@ export default async function ProdutoPage({ params }: Props) {
             </main>
         )
     }
+
+    const { data: related } = product.category
+        ? await supabase
+            .from('products')
+            .select('id, title, price, image_url, artisans(name)')
+            .eq('is_active', true)
+            .eq('category', product.category)
+            .neq('id', product.id)
+            .limit(4)
+        : { data: [] }
 
     return (
         <main>
@@ -45,101 +55,191 @@ export default async function ProdutoPage({ params }: Props) {
                 <CartLink />
             </nav>
 
-            <Link href="/" style={{
-                fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
-                color: 'var(--yez-gray)', textDecoration: 'none',
-                display: 'inline-block', padding: '16px 20px'
-            }}>
-                ← Voltar
-            </Link>
+            {/* Layout 2 colunas no desktop */}
+            <div className="product-detail-grid">
 
-            {/* Imagem */}
-            <div style={{
-                width: '100%', aspectRatio: '4 / 3',
-                background: 'var(--yez-cream)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, letterSpacing: 1, textTransform: 'uppercase',
-                color: 'var(--yez-gray)', overflow: 'hidden',
-            }}>
-                {product.image_url
-                    ? <img src={product.image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : 'Foto em breve'
-                }
-            </div>
-
-            <div style={{ padding: '20px' }}>
-                {/* Artesã */}
-                <div style={{
-                    fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
-                    color: 'var(--yez-gray)', marginBottom: 6
-                }}>
-                    {product.artisans?.name}
+                {/* Coluna esquerda: imagem */}
+                <div className="product-detail-image-col">
+                    <Link href="/" style={{
+                        fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
+                        color: 'var(--yez-gray)', textDecoration: 'none',
+                        display: 'inline-block', padding: '16px 20px'
+                    }}>
+                        ← Voltar
+                    </Link>
+                    <div style={{
+                        width: '100%', aspectRatio: '4 / 3',
+                        background: 'var(--yez-cream)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, letterSpacing: 1, textTransform: 'uppercase',
+                        color: 'var(--yez-gray)', overflow: 'hidden',
+                    }}>
+                        {product.image_url
+                            ? <img src={product.image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : 'Foto em breve'
+                        }
+                    </div>
                 </div>
 
-                {/* Nome */}
-                <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: .5, marginBottom: 8, lineHeight: 1.3 }}>
-                    {product.title}
-                </div>
+                {/* Coluna direita: informações */}
+                <div className="product-detail-info-col">
+                    {/* Artesã */}
+                    <div style={{
+                        fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
+                        color: 'var(--yez-gray)', marginBottom: 6
+                    }}>
+                        {product.artisans?.name}
+                    </div>
 
-                {/* Preço */}
-                <div style={{
-                    fontFamily: "'Dancing Script', cursive", fontSize: 34, marginBottom: 16
-                }}>
-                    {formatCurrency(Number(product.price))}
-                </div>
+                    {/* Nome */}
+                    <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: .5, marginBottom: 8, lineHeight: 1.3 }}>
+                        {product.title}
+                    </div>
 
-                {/* Divisor */}
-                <div style={{ height: 1, background: 'var(--yez-lightgray)', marginBottom: 16 }} />
+                    {/* Preço */}
+                    <div style={{
+                        fontFamily: "'Dancing Script', cursive", fontSize: 34, marginBottom: 16
+                    }}>
+                        {formatCurrency(Number(product.price))}
+                    </div>
 
-                {/* Descrição */}
-                <div style={{
-                    fontSize: 14, color: 'var(--yez-gray)', lineHeight: 1.7,
-                    marginBottom: 16, letterSpacing: .3
-                }}>
-                    {product.description}
-                </div>
+                    <div style={{ height: 1, background: 'var(--yez-lightgray)', marginBottom: 16 }} />
 
-                {/* Info */}
-                <div style={{
-                    display: 'grid', gridTemplateColumns: '1fr 1fr',
-                    gap: 10, marginBottom: 20
-                }}>
-                    {[
-                        { label: 'Origem', value: 'Brasília, DF' },
-                        { label: 'Envio', value: 'PAC / SEDEX' },
-                        { label: 'Prazo', value: '3–8 dias úteis' },
-                        { label: 'Feito', value: 'À mão' },
-                    ].map(({ label, value }) => (
-                        <div key={label} style={{ background: 'var(--yez-cream)', padding: '10px 12px' }}>
-                            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 3 }}>
-                                {label}
+                    {/* Descrição */}
+                    <div style={{
+                        fontSize: 14, color: 'var(--yez-gray)', lineHeight: 1.7,
+                        marginBottom: 20, letterSpacing: .3
+                    }}>
+                        {product.description}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: '1fr 1fr',
+                        gap: 10, marginBottom: 20
+                    }}>
+                        {[
+                            { label: 'Origem', value: 'Brasília, DF' },
+                            { label: 'Envio', value: 'PAC / SEDEX' },
+                            { label: 'Prazo', value: '3–8 dias úteis' },
+                            { label: 'Feito', value: 'À mão' },
+                        ].map(({ label, value }) => (
+                            <div key={label} style={{ background: 'var(--yez-cream)', padding: '10px 12px' }}>
+                                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 3 }}>
+                                    {label}
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: .3 }}>
+                                    {value}
+                                </div>
                             </div>
-                            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: .3 }}>
-                                {value}
+                        ))}
+                    </div>
+
+                    {/* Alerta de estoque baixo */}
+                    {product.stock_quantity <= 3 && product.stock_quantity > 0 && (
+                        <div style={{ fontSize: 11, color: '#b85c00', letterSpacing: .5, marginBottom: 12 }}>
+                            Restam apenas {product.stock_quantity} {product.stock_quantity === 1 ? 'unidade' : 'unidades'}
+                        </div>
+                    )}
+
+                    {/* Botão */}
+                    <AddToCartButton
+                        product={{
+                            id: product.id,
+                            title: product.title,
+                            price: Number(product.price),
+                            artisan: product.artisans?.name ?? '',
+                            image_url: product.image_url ?? undefined,
+                        }}
+                        stock={product.stock_quantity}
+                    />
+
+                    {/* Seção da artesã */}
+                    {product.artisans?.name && (
+                        <div style={{
+                            marginTop: 32,
+                            borderTop: '1px solid var(--yez-lightgray)',
+                            paddingTop: 24,
+                        }}>
+                            <div style={{
+                                fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+                                color: 'var(--yez-gray)', marginBottom: 12
+                            }}>
+                                Sobre a artesã
+                            </div>
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: 16,
+                                padding: '16px', background: 'var(--yez-cream)',
+                            }}>
+                                <div style={{
+                                    width: 44, height: 44, background: 'var(--yez-lightgray)',
+                                    flexShrink: 0, display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontFamily: "'Dancing Script', cursive", fontSize: 20,
+                                    color: 'var(--yez-gray)',
+                                }}>
+                                    {product.artisans.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                                        {product.artisans.name}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: 'var(--yez-gray)', letterSpacing: .5, lineHeight: 1.6 }}>
+                                        Artesã parceira · Brasília, DF · Peças feitas à mão
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    ))}
+                    )}
                 </div>
-
-                {/* Estoque */}
-                {product.stock_quantity <= 3 && product.stock_quantity > 0 && (
-                    <div style={{ fontSize: 11, color: '#b85c00', letterSpacing: .5, marginBottom: 12 }}>
-                        Restam apenas {product.stock_quantity} {product.stock_quantity === 1 ? 'unidade' : 'unidades'}
-                    </div>
-                )}
-
-                {/* Botão */}
-                <AddToCartButton
-                    product={{
-                        id: product.id,
-                        title: product.title,
-                        price: Number(product.price),
-                        artisan: product.artisans?.name ?? '',
-                        image_url: product.image_url ?? undefined,
-                    }}
-                    stock={product.stock_quantity}
-                />
             </div>
+
+            {/* Produtos relacionados */}
+            {related && related.length > 0 && (
+                <div style={{ borderTop: '1px solid var(--yez-lightgray)', paddingTop: 32, marginTop: 16 }}>
+                    <div style={{
+                        padding: '0 20px 16px',
+                        fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--yez-gray)'
+                    }}>
+                        Você também pode gostar
+                    </div>
+                    <div className="product-grid">
+                        {related.map((rel) => (
+                            <Link
+                                key={rel.id}
+                                href={`/produto/${rel.id}`}
+                                style={{ textDecoration: 'none', color: 'inherit' }}
+                                className="product-card"
+                            >
+                                <div
+                                    className="product-image"
+                                    style={{
+                                        width: '100%', aspectRatio: '1 / 1',
+                                        background: 'var(--yez-cream)', overflow: 'hidden',
+                                        marginBottom: 10,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: 12, color: 'var(--yez-gray)',
+                                    }}
+                                >
+                                    {rel.image_url
+                                        ? <img src={rel.image_url} alt={rel.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        : 'Foto em breve'
+                                    }
+                                </div>
+                                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 4 }}>
+                                    {(rel.artisans as { name: string } | null)?.name}
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3, marginBottom: 6 }}>
+                                    {rel.title}
+                                </div>
+                                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                                    {formatCurrency(Number(rel.price))}
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
         </main>
     )
 }
