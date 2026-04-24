@@ -1,23 +1,11 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
+import { formatCurrency } from '@/app/lib/format'
+import { STATUS_LABELS, STATUS_COLORS } from '@/app/admin/lib/status'
 import { notFound } from 'next/navigation'
 import UpdateOrderStatus from './UpdateOrderStatus'
 import Link from 'next/link'
 
 type Props = { params: Promise<{ id: string }> }
-
-const statusLabel: Record<string, string> = {
-  pending: 'Pendente',
-  paid: 'Pago',
-  shipped: 'Enviado',
-  cancelled: 'Cancelado',
-}
-
-const statusColor: Record<string, string> = {
-  pending: '#F4A100',
-  paid: '#2E7D32',
-  shipped: '#1565C0',
-  cancelled: '#CC0000',
-}
 
 export default async function PedidoDetailPage({ params }: Props) {
   const { id } = await params
@@ -64,9 +52,9 @@ export default async function PedidoDetailPage({ params }: Props) {
         <div style={{ textAlign: 'right' }}>
           <div style={{
             fontSize: 11, letterSpacing: 1, textTransform: 'uppercase',
-            color: statusColor[order.status] ?? 'var(--yez-gray)', fontWeight: 700, marginBottom: 8
+            color: STATUS_COLORS[order.status] ?? 'var(--yez-gray)', fontWeight: 700, marginBottom: 8
           }}>
-            {statusLabel[order.status] ?? order.status}
+            {STATUS_LABELS[order.status] ?? order.status}
           </div>
           <UpdateOrderStatus orderId={order.id} currentStatus={order.status} />
         </div>
@@ -142,10 +130,10 @@ export default async function PedidoDetailPage({ params }: Props) {
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>
-                R$ {(item.unit_price * item.quantity).toFixed(2)}
+                {formatCurrency(item.unit_price * item.quantity)}
               </div>
               <div style={{ fontSize: 10, color: 'var(--yez-gray)' }}>
-                R$ {item.unit_price.toFixed(2)} un.
+                {formatCurrency(item.unit_price)} un.
               </div>
             </div>
           </div>
@@ -159,11 +147,11 @@ export default async function PedidoDetailPage({ params }: Props) {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--yez-gray)', marginBottom: 6 }}>
           <span>Produtos</span>
-          <span>R$ {Number(order.total_amount).toFixed(2)}</span>
+          <span>{formatCurrency(Number(order.total_amount))}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--yez-gray)', marginBottom: 12 }}>
           <span>Frete</span>
-          <span>R$ {Number(order.shipping_cost).toFixed(2)}</span>
+          <span>{formatCurrency(Number(order.shipping_cost))}</span>
         </div>
         <div style={{
           display: 'flex', justifyContent: 'space-between',
@@ -171,7 +159,7 @@ export default async function PedidoDetailPage({ params }: Props) {
           borderTop: '1.5px solid var(--yez-black)'
         }}>
           <span>Total</span>
-          <span>R$ {totalPago.toFixed(2)}</span>
+          <span>{formatCurrency(totalPago)}</span>
         </div>
         {order.mp_payment_id && (
           <div style={{ marginTop: 10, fontSize: 10, color: 'var(--yez-gray)', letterSpacing: .5 }}>
