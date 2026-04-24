@@ -1,6 +1,7 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
+import { formatCurrency } from '@/app/lib/format'
 import Link from 'next/link'
-import DeleteProductButton from './DeleteProductButton'
+import ToggleProductButton from './DeleteProductButton'
 
 export default async function AdminProdutosPage() {
   const supabase = createSupabaseServiceClient()
@@ -59,7 +60,7 @@ export default async function AdminProdutosPage() {
             <div style={{
               display: 'grid', gridTemplateColumns: '80px 2fr 1fr 80px 80px 120px',
               padding: '10px 16px', borderBottom: '1px solid var(--yez-lightgray)',
-              fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)'
+              fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)'
             }}>
               <span>Foto</span>
               <span>Produto</span>
@@ -97,7 +98,7 @@ export default async function AdminProdutosPage() {
                   {product.artisans?.name ?? '—'}
                 </div>
                 <div style={{ fontSize: 13 }}>
-                  R$ {Number(product.price).toFixed(2)}
+                  {formatCurrency(Number(product.price))}
                 </div>
                 <div style={{
                   fontSize: 13,
@@ -117,7 +118,7 @@ export default async function AdminProdutosPage() {
                   >
                     Editar
                   </Link>
-                  <DeleteProductButton id={product.id} />
+                  <ToggleProductButton id={product.id} isActive={product.is_active} />
                 </div>
               </div>
             ))}

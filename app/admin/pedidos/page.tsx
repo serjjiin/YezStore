@@ -1,19 +1,7 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
+import { formatCurrency } from '@/app/lib/format'
+import { STATUS_LABELS, STATUS_COLORS } from '@/app/admin/lib/status'
 import Link from 'next/link'
-
-const statusLabel: Record<string, string> = {
-  pending: 'Pendente',
-  paid: 'Pago',
-  shipped: 'Enviado',
-  cancelled: 'Cancelado',
-}
-
-const statusColor: Record<string, string> = {
-  pending: '#F4A100',
-  paid: '#2E7D32',
-  shipped: '#1565C0',
-  cancelled: '#CC0000',
-}
 
 export default async function AdminPedidosPage({
   searchParams,
@@ -96,7 +84,7 @@ export default async function AdminPedidosPage({
             <div style={{
               display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 100px 40px',
               padding: '10px 16px', borderBottom: '1px solid var(--yez-lightgray)',
-              fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)'
+              fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)'
             }}>
               <span>Cliente</span>
               <span>Data</span>
@@ -123,13 +111,13 @@ export default async function AdminPedidosPage({
                   {new Date(order.created_at).toLocaleDateString('pt-BR')}
                 </span>
                 <span>
-                  R$ {(Number(order.total_amount) + Number(order.shipping_cost)).toFixed(2)}
+                  {formatCurrency(Number(order.total_amount) + Number(order.shipping_cost))}
                 </span>
                 <span style={{
-                  fontSize: 9, letterSpacing: 1, textTransform: 'uppercase',
-                  color: statusColor[order.status] ?? 'var(--yez-gray)', fontWeight: 600
+                  fontSize: 10, letterSpacing: 1, textTransform: 'uppercase',
+                  color: STATUS_COLORS[order.status] ?? 'var(--yez-gray)', fontWeight: 600
                 }}>
-                  {statusLabel[order.status] ?? order.status}
+                  {STATUS_LABELS[order.status] ?? order.status}
                 </span>
                 <span style={{ fontSize: 16, color: 'var(--yez-gray)' }}>→</span>
               </Link>
