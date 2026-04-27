@@ -1,7 +1,7 @@
 # Yez Store — Documentação Completa do Projeto
 
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
-> Última atualização: 2026-04-24 (PR #6 concluído — correções do painel admin)
+> Última atualização: 2026-04-27 (limpeza — seção de análise do PR #6 removida)
 
 ---
 
@@ -378,82 +378,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 
 ---
 
-## 14. Análise Admin + Plano PR #6
-
-### Problemas identificados na revisão de 2026-04-23
-
-#### Bugs / Falhas Funcionais
-
-| # | Arquivo | Problema | Prioridade |
-|---|---|---|---|
-| 1 | `admin/artesaos/DeleteArtisanButton.tsx` | `supabase.delete()` sem checar `error` retornado — falha silenciosa se FK constraint ou RLS bloquear | Alta |
-| 2 | `admin/produtos/DeleteProductButton.tsx` | `supabase.update({ is_active: false })` sem checar `error` | Alta |
-| 3 | `admin/pedidos/[id]/UpdateOrderStatus.tsx` | `supabase.update({ status })` sem checar `error` — UI pode mostrar status diferente do banco | Alta |
-| 4 | `admin/produtos/page.tsx` | Não há botão de **reativar** produto — só desativa. Para reativar é preciso ir no Supabase Dashboard | Alta |
-
-#### Qualidade de Código
-
-| # | Problema | Prioridade |
-|---|---|---|
-| 5 | `formatCurrency` de `app/lib/format.ts` não usada no admin — ainda usa `` `R$ ${value.toFixed(2)}` `` em pelo menos 3 arquivos | Alta |
-| 6 | Objetos `statusLabel`/`statusColor` (mapeiam status → texto/cor) duplicados em `admin/page.tsx`, `admin/pedidos/page.tsx` e `admin/pedidos/[id]/page.tsx` | Alta |
-| 7 | `inputStyle`/`labelStyle` duplicados em `ProdutoForm.tsx` e `ArtesaoForm.tsx` — objetos idênticos copiados | Média |
-
-#### UX / Design
-
-| # | Problema | Prioridade |
-|---|---|---|
-| 8 | Fontes de `fontSize: 9` em cabeçalhos de tabela e botão "Remover" — ilegível em telas normais | Média |
-| 9 | Dashboard: `gridTemplateColumns: '1fr 1fr 1fr 1fr'` sem fallback para mobile | Média |
-| 10 | Artesãos: `gridTemplateColumns: '2fr 1fr 1fr 80px 120px'` (5 colunas) transbordam em telas estreitas | Média |
-
-#### Funcionalidades Faltando (escopo futuro, não no PR #6)
-
-- Sem paginação nas listas de pedidos, produtos e artesãos
-- Sem busca/filtro nos produtos e artesãos
-- `split_percentage` cadastrado mas sem tela de relatório de repasse
-
----
-
-### Plano PR #6 — Correções Admin
-
-**Branch sugerida:** `fix/admin-corrections`
-
-**Escopo do PR #6 (alta prioridade):**
-
-1. **Tratamento de erro + feedback inline** nos 3 componentes de ação:
-   - `DeleteArtisanButton`: adicionar `const { error } = await supabase...` e mostrar `alert(error.message)` ou estado de erro inline se falhar
-   - `DeleteProductButton`: mesmo padrão
-   - `UpdateOrderStatus`: mesmo padrão — mostrar erro se update falhar
-
-2. **Botão de reativar produto** em `admin/produtos/page.tsx`:
-   - `DeleteProductButton` já tem a lógica de `update({ is_active: false })`
-   - Criar botão "Reativar" quando `product.is_active === false` que faz `update({ is_active: true })`
-   - Alternativa: transformar `DeleteProductButton` em `ToggleProductButton` que alterna o estado
-
-3. **`formatCurrency` no admin** — substituir `` `R$ ${value.toFixed(2)}` `` por `formatCurrency(value)` importado de `@/app/lib/format`
-
-4. **Centralizar statusLabel/statusColor** — criar `app/admin/lib/status.ts`:
-   ```ts
-   export const STATUS_LABELS: Record<string, string> = {
-     pending: 'Pendente', paid: 'Pago', shipped: 'Enviado', cancelled: 'Cancelado'
-   }
-   export const STATUS_COLORS: Record<string, string> = {
-     pending: '#b85c00', paid: '#2d6a2d', shipped: '#1a5276', cancelled: '#6c757d'
-   }
-   ```
-   Importar nos 3 arquivos que duplicam essa lógica.
-
-5. **Fontes 9px → 10px** nos cabeçalhos de tabela e botão "Remover"
-
-**Fora do PR #6 (deixar para depois):**
-- Responsividade dos grids (escopo visual maior, baixa urgência)
-- `inputStyle`/`labelStyle` compartilhado (DRY mas sem impacto funcional)
-- Paginação, busca, relatório de repasse
-
----
-
-## 15. Dívida Técnica
+## 14. Dívida Técnica
 
 | Item | Impacto | Ação |
 |---|---|---|
