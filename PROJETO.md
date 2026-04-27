@@ -386,7 +386,8 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | Peso de frete estimado (300g/item) | Médio | Adicionar `weight_grams` em `products` |
 | Dimensões de embalagem hardcoded | Médio | Cadastrar por produto ou categoria |
 | `<img>` em vez de `next/image` | Baixo | Substituir para otimização |
-| Sem testes automatizados | Alto | Iniciar com testes nas APIs críticas |
+| ~~Sem testes automatizados~~ | ~~Alto~~ | Vitest configurado — ver `TESTES.md` |
+| API routes sem cobertura de testes | Alto | Aguardando `.env` — usar mocks quando disponível |
 
 ---
 

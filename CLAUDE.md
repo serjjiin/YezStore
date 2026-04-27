@@ -11,12 +11,14 @@ Ao iniciar uma nova conversa, leia `PROJETO.md` para entender o estado atual do 
 ## Comandos
 
 ```bash
-npm run dev      # servidor de desenvolvimento em localhost:3000
-npm run build    # build de produção
-npm run lint     # ESLint
+npm run dev          # servidor de desenvolvimento em localhost:3000
+npm run build        # build de produção
+npm run lint         # ESLint
+npm test             # roda todos os testes (Vitest)
+npm run test:watch   # modo watch — re-executa ao salvar
 ```
 
-Não há suite de testes configurada no MVP.
+Metodologia TDD adotada — ver `TESTES.md` para guia completo, estrutura e próximos passos.
 
 ## Arquitetura
 
