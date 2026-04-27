@@ -3,6 +3,8 @@
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
 > Última atualização: 2026-04-27 (limpeza — seção de análise do PR #6 removida)
 
+> 📋 **Revisão técnica completa disponível em [`REVISAO.md`](./REVISAO.md)** — diagnóstico de domínio, segurança, arquitetura, código e metodologia com roadmap de ação priorizado.
+
 ---
 
 ## Índice
