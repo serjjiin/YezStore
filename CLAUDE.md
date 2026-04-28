@@ -11,12 +11,14 @@ Ao iniciar uma nova conversa, leia `PROJETO.md` para entender o estado atual do 
 ## Comandos
 
 ```bash
-npm run dev      # servidor de desenvolvimento em localhost:3000
-npm run build    # build de produção
-npm run lint     # ESLint
+npm run dev          # servidor de desenvolvimento em localhost:3000
+npm run build        # build de produção
+npm run lint         # ESLint
+npm test             # roda todos os testes (Vitest)
+npm run test:watch   # modo watch — re-executa ao salvar
 ```
 
-Não há suite de testes configurada no MVP.
+Metodologia TDD adotada — ver `TESTES.md` para guia completo, estrutura e próximos passos.
 
 ## Arquitetura
 
@@ -59,7 +61,8 @@ Há três helpers em `app/lib/supabase-server.ts` e `app/lib/supabase-browser.ts
 - `products.is_active` oculta produtos sem apagar histórico de pedidos
 - `artisans.split_percentage` (ex: `80` = 80% ao artesão) alimenta o relatório de repasse
 - `orders.status`: `pending` | `paid` | `shipped` | `cancelled`
-- `unit_price` em `order_items` é snapshot do preço no momento da compra
+- `orders.total_amount` = produtos + frete (total cobrado do cliente); `shipping_cost` é o detalhamento do frete
+- `unit_price` em `order_items` é snapshot do preço no momento da compra (usado no cálculo de repasse)
 - Schema completo em `supabase/migrations/001_initial_schema.sql`
 
 ### Variáveis de ambiente
@@ -69,6 +72,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=       # nunca expor ao cliente
 MERCADO_PAGO_ACCESS_TOKEN=       # usar TEST-... para sandbox
+MERCADO_PAGO_WEBHOOK_SECRET=     # secret do webhook MP (Dashboard MP > Webhooks)
 MELHOR_ENVIO_TOKEN=
 MELHOR_ENVIO_URL=                # default: sandbox.melhorenvio.com.br
 MELHOR_ENVIO_CEP_ORIGEM=         # default: 70000000 (Brasília)

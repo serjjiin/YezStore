@@ -3,6 +3,8 @@
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
 > Última atualização: 2026-04-27 (limpeza — seção de análise do PR #6 removida)
 
+> 📋 **Revisão técnica completa disponível em [`REVISAO.md`](./REVISAO.md)** — diagnóstico de domínio, segurança, arquitetura, código e metodologia com roadmap de ação priorizado.
+
 ---
 
 ## Índice
@@ -386,7 +388,8 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | Peso de frete estimado (300g/item) | Médio | Adicionar `weight_grams` em `products` |
 | Dimensões de embalagem hardcoded | Médio | Cadastrar por produto ou categoria |
 | `<img>` em vez de `next/image` | Baixo | Substituir para otimização |
-| Sem testes automatizados | Alto | Iniciar com testes nas APIs críticas |
+| ~~Sem testes automatizados~~ | ~~Alto~~ | Vitest configurado — ver `TESTES.md` |
+| API routes sem cobertura de testes | Alto | Aguardando `.env` — usar mocks quando disponível |
 
 ---
 

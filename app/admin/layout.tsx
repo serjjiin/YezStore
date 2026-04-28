@@ -13,7 +13,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Páginas de login não renderizam o layout completo
+  // proxy.ts já redireciona /admin/* sem sessão antes de chegar aqui.
+  // Para /admin/login (que também usa este layout), renderiza só o children sem sidebar.
   if (!user) {
     return <>{children}</>
   }

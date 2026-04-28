@@ -107,6 +107,14 @@ input:focus-visible {
   display: none;
 }
 
+.hero-mosaic img {
+  transition: transform 0.4s ease;
+}
+
+.hero-mosaic a:hover img {
+  transform: scale(1.05);
+}
+
 @media (min-width: 768px) {
   .hero-section {
     display: grid;
