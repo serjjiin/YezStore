@@ -19,24 +19,38 @@ vi.mock('mercadopago', () => ({
   }),
 }))
 
-// Cria um mock do cliente Supabase com cadeia de chamadas encadeáveis.
-// single() é o único método que retorna uma Promise — os demais retornam o
-// próprio chain para que .insert().select().single() e .update().eq() funcionem.
-// Quando o código faz `await supabase.from('order_items').insert(...)` sem chamar
-// .single(), o `await` recebe o chain (não-thenable) e desestrutura error: undefined.
-function makeSupabaseChain(
-  orderResult: { data: { id: string } | null; error: { message: string } | null } = {
-    data: { id: 'order-uuid' },
-    error: null,
+// Mock com consciência de tabela — necessário para testes de segurança onde o
+// servidor precisa buscar preços do banco em vez de confiar no cliente.
+type ProductRow = { id: string; title: string; price: number; is_active: boolean }
+
+interface SmartChainOptions {
+  products?: ProductRow[]
+  orderResult?: { data: { id: string } | null; error: { message: string } | null }
+}
+
+function makeSmartChain({
+  products = [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true }],
+  orderResult = { data: { id: 'order-uuid' }, error: null },
+}: SmartChainOptions = {}) {
+  const inSpy = vi.fn().mockResolvedValue({ data: products, error: null })
+  const orderInsertSpy = vi.fn(() => ({
+    select: vi.fn(() => ({
+      single: vi.fn().mockResolvedValue(orderResult),
+    })),
+  }))
+  const itemsInsertSpy = vi.fn().mockResolvedValue({ error: null })
+  const updateSpy = vi.fn(() => ({ eq: vi.fn().mockResolvedValue({}) }))
+
+  const client = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    from: vi.fn((table: string): any => {
+      if (table === 'products') return { select: vi.fn(() => ({ in: inSpy })) }
+      if (table === 'orders') return { insert: orderInsertSpy, update: updateSpy }
+      return { insert: itemsInsertSpy }
+    }),
   }
-) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const chain: Record<string, any> = {}
-  for (const method of ['from', 'insert', 'select', 'update', 'eq']) {
-    chain[method] = vi.fn().mockReturnValue(chain)
-  }
-  chain.single = vi.fn().mockResolvedValue(orderResult)
-  return chain
+
+  return { client, orderInsertSpy, itemsInsertSpy, updateSpy, inSpy }
 }
 
 function makeRequest(body: object) {
@@ -89,8 +103,8 @@ describe('POST /api/checkout', () => {
 
   describe('erro no banco', () => {
     it('retorna 500 se o Supabase falhar ao criar o pedido', async () => {
-      const chain = makeSupabaseChain({ data: null, error: { message: 'DB error' } })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(chain)
+      const { client } = makeSmartChain({ orderResult: { data: null, error: { message: 'DB error' } } })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(500)
@@ -103,8 +117,8 @@ describe('POST /api/checkout', () => {
 
   describe('sem Mercado Pago configurado', () => {
     it('retorna 503 quando MERCADO_PAGO_ACCESS_TOKEN está ausente', async () => {
-      const chain = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(chain)
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(503)
@@ -118,8 +132,8 @@ describe('POST /api/checkout', () => {
   describe('sucesso', () => {
     it('retorna order_id, init_point e sandbox_init_point', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
-      const chain = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(chain)
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({
         id: 'pref-id',
         init_point: 'https://mp.com/pay',
@@ -136,15 +150,61 @@ describe('POST /api/checkout', () => {
 
     it('cria os itens do pedido no banco com os dados corretos', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
-      const chain = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(chain)
+      const { client, itemsInsertSpy } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       await POST(makeRequest(validBody))
 
-      expect(chain.insert).toHaveBeenCalledWith([
+      expect(itemsInsertSpy).toHaveBeenCalledWith([
         { order_id: 'order-uuid', product_id: 'prod-1', quantity: 2, unit_price: 50 },
       ])
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // 🔴 RED — Segurança: preço deve vir do banco, não do cliente
+  // ---------------------------------------------------------------------------
+
+  describe('segurança — validação de preço', () => {
+    it('ignora o preço enviado pelo cliente e usa o preço do banco', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client, itemsInsertSpy } = makeSmartChain({
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true }],
+      })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      // Cliente envia preço manipulado: R$ 0,01 em vez de R$ 50,00
+      const bodyComPrecoManipulado = {
+        ...validBody,
+        items: [{ id: 'prod-1', title: 'Sousplat', price: 0.01, quantity: 1 }],
+      }
+
+      await POST(makeRequest(bodyComPrecoManipulado))
+
+      // Deve usar o preço do banco (50), não o do cliente (0.01)
+      expect(itemsInsertSpy).toHaveBeenCalledWith([
+        expect.objectContaining({ product_id: 'prod-1', unit_price: 50 }),
+      ])
+    })
+
+    it('retorna 400 se algum produto não existir no banco', async () => {
+      const { client } = makeSmartChain({ products: [] })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+
+      const res = await POST(makeRequest(validBody))
+      expect(res.status).toBe(400)
+    })
+
+    it('retorna 400 se produto estiver inativo', async () => {
+      const { client } = makeSmartChain({
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: false }],
+      })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+
+      const res = await POST(makeRequest(validBody))
+      expect(res.status).toBe(400)
     })
   })
 

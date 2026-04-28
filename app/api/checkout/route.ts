@@ -3,6 +3,9 @@ import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
+type RequestItem = { id: string; quantity: number }
+type DbProduct = { id: string; title: string; price: number; is_active: boolean }
+
 export async function POST(request: Request) {
   const body = await request.json()
   const { customer, items, shipping, shippingAddress } = body
@@ -13,12 +16,33 @@ export async function POST(request: Request) {
 
   const supabase = createSupabaseServiceClient()
 
-  // Cria o pedido no banco com status pending
-  const totalAmount = items.reduce(
-    (sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity,
-    0
+  // Busca preços reais do banco — nunca confiar no preço enviado pelo cliente
+  const productIds = (items as RequestItem[]).map((i) => i.id)
+  const { data: dbProducts, error: productsError } = await supabase
+    .from('products')
+    .select('id, price, title, is_active')
+    .in('id', productIds)
+
+  if (productsError || !dbProducts?.length) {
+    return Response.json({ error: 'Produtos não encontrados.' }, { status: 400 })
+  }
+
+  const productMap = Object.fromEntries(
+    (dbProducts as DbProduct[]).map((p) => [p.id, p])
   )
+
+  for (const item of items as RequestItem[]) {
+    if (!productMap[item.id]?.is_active) {
+      return Response.json({ error: 'Produto indisponível.' }, { status: 400 })
+    }
+  }
+
   const shippingCost = shipping ? parseFloat(shipping.price) : 0
+  const totalAmount =
+    (items as RequestItem[]).reduce(
+      (sum, i) => sum + productMap[i.id].price * i.quantity,
+      0
+    ) + shippingCost
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -42,12 +66,11 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Erro ao criar pedido.' }, { status: 500 })
   }
 
-  // Cria os itens do pedido
-  const orderItems = items.map((item: { id: string; price: number; quantity: number }) => ({
+  const orderItems = (items as RequestItem[]).map((item) => ({
     order_id: order.id,
     product_id: item.id,
     quantity: item.quantity,
-    unit_price: item.price,
+    unit_price: productMap[item.id].price,
   }))
 
   const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
@@ -55,7 +78,6 @@ export async function POST(request: Request) {
     console.error('Erro ao criar itens do pedido:', itemsError)
   }
 
-  // Cria preferência no Mercado Pago
   if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
     return Response.json({
       error: 'Mercado Pago não configurado. Defina MERCADO_PAGO_ACCESS_TOKEN no .env.local.',
@@ -67,10 +89,10 @@ export async function POST(request: Request) {
   })
   const preference = new Preference(client)
 
-  const mpItems = items.map((item: { title: string; price: number; quantity: number }) => ({
-    title: item.title,
+  const mpItems = (items as RequestItem[]).map((item) => ({
+    title: productMap[item.id].title,
     quantity: item.quantity,
-    unit_price: item.price,
+    unit_price: productMap[item.id].price,
     currency_id: 'BRL',
   }))
 
