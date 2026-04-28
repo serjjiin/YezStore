@@ -88,9 +88,7 @@ export default async function Home({
               <img
                 src={p.image_url!}
                 alt={p.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }}
-                onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-                onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
             </Link>
           ))}
