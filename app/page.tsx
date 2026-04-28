@@ -1,4 +1,4 @@
-import { supabase } from '@/app/lib/supabase'
+import { createSupabaseServerClient } from '@/app/lib/supabase-server'
 import { formatCurrency } from '@/app/lib/format'
 import AddToCartButton from './components/AddToCartButton'
 import CategoryFilter from './components/CategoryFilter'
@@ -11,6 +11,7 @@ export default async function Home({
   searchParams: Promise<{ categoria?: string }>
 }) {
   const { categoria = '' } = await searchParams
+  const supabase = createSupabaseServerClient()
 
   const [{ data: heroProducts }, { data: products, error }] = await Promise.all([
     supabase
