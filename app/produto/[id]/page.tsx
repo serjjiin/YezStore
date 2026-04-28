@@ -10,7 +10,7 @@ type Props = {
 
 export default async function ProdutoPage({ params }: Props) {
     const { id } = await params
-    const supabase = createSupabaseServerClient()
+    const supabase = await createSupabaseServerClient()
 
     const { data: product, error } = await supabase
         .from('products')
