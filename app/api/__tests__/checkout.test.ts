@@ -21,16 +21,18 @@ vi.mock('mercadopago', () => ({
 
 // Mock com consciência de tabela — necessário para testes de segurança onde o
 // servidor precisa buscar preços do banco em vez de confiar no cliente.
-type ProductRow = { id: string; title: string; price: number; is_active: boolean }
+type ProductRow = { id: string; title: string; price: number; is_active: boolean; stock_quantity: number }
 
 interface SmartChainOptions {
   products?: ProductRow[]
   orderResult?: { data: { id: string } | null; error: { message: string } | null }
+  stockDecrementResult?: { id: string }[]
 }
 
 function makeSmartChain({
-  products = [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true }],
+  products = [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 5 }],
   orderResult = { data: { id: 'order-uuid' }, error: null },
+  stockDecrementResult = [{ id: 'prod-1' }],
 }: SmartChainOptions = {}) {
   const inSpy = vi.fn().mockResolvedValue({ data: products, error: null })
   const orderInsertSpy = vi.fn(() => ({
@@ -40,17 +42,24 @@ function makeSmartChain({
   }))
   const itemsInsertSpy = vi.fn().mockResolvedValue({ error: null })
   const updateSpy = vi.fn(() => ({ eq: vi.fn().mockResolvedValue({}) }))
+  const productsUpdateSpy = vi.fn(() => ({
+    eq: vi.fn(() => ({
+      gte: vi.fn(() => ({
+        select: vi.fn().mockResolvedValue({ data: stockDecrementResult, error: null }),
+      })),
+    })),
+  }))
 
   const client = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     from: vi.fn((table: string): any => {
-      if (table === 'products') return { select: vi.fn(() => ({ in: inSpy })) }
+      if (table === 'products') return { select: vi.fn(() => ({ in: inSpy })), update: productsUpdateSpy }
       if (table === 'orders') return { insert: orderInsertSpy, update: updateSpy }
       return { insert: itemsInsertSpy }
     }),
   }
 
-  return { client, orderInsertSpy, itemsInsertSpy, updateSpy, inSpy }
+  return { client, orderInsertSpy, itemsInsertSpy, updateSpy, inSpy, productsUpdateSpy }
 }
 
 function makeRequest(body: object) {
@@ -170,7 +179,7 @@ describe('POST /api/checkout', () => {
     it('ignora o preço enviado pelo cliente e usa o preço do banco', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client, itemsInsertSpy } = makeSmartChain({
-        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true }],
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 5 }],
       })
       vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
@@ -199,12 +208,73 @@ describe('POST /api/checkout', () => {
 
     it('retorna 400 se produto estiver inativo', async () => {
       const { client } = makeSmartChain({
-        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: false }],
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: false, stock_quantity: 5 }],
       })
       vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(400)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Validação de estoque
+  // ---------------------------------------------------------------------------
+
+  describe('validação de estoque', () => {
+    it('retorna 409 se estoque insuficiente (quantidade solicitada maior que disponível)', async () => {
+      // stock_quantity=1, validBody pede quantity=2 → deve rejeitar
+      const { client } = makeSmartChain({
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 1 }],
+      })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+
+      const res = await POST(makeRequest(validBody))
+      expect(res.status).toBe(409)
+      const json = await res.json()
+      expect(json.error).toMatch(/estoque/i)
+    })
+
+    it('retorna 409 se estoque zerado', async () => {
+      const { client } = makeSmartChain({
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 0 }],
+      })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+
+      const res = await POST(makeRequest(validBody))
+      expect(res.status).toBe(409)
+    })
+
+    it('decrementa o estoque atomicamente após criar o pedido', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client, productsUpdateSpy } = makeSmartChain({
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 5 }],
+      })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      await POST(makeRequest(validBody)) // quantity=2
+
+      // Deve chamar update em products com novo estoque (5 - 2 = 3)
+      expect(productsUpdateSpy).toHaveBeenCalledWith({ stock_quantity: 3 })
+    })
+
+    it('retorna 409 em corrida: outro cliente comprou o último item antes (update atômico retorna 0 linhas)', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      // stock_quantity=1 e qty=1 passa a verificação inicial, mas o update atômico falha
+      const { client } = makeSmartChain({
+        products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 1 }],
+        stockDecrementResult: [], // simula corrida: 0 linhas atualizadas
+      })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      const bodyCorrida = {
+        ...validBody,
+        items: [{ id: 'prod-1', title: 'Sousplat', price: 50, quantity: 1 }],
+      }
+      const res = await POST(makeRequest(bodyCorrida))
+      expect(res.status).toBe(409)
     })
   })
 

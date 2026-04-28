@@ -4,7 +4,7 @@ import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
 
 type RequestItem = { id: string; quantity: number }
-type DbProduct = { id: string; title: string; price: number; is_active: boolean }
+type DbProduct = { id: string; title: string; price: number; is_active: boolean; stock_quantity: number | null }
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const productIds = (items as RequestItem[]).map((i) => i.id)
   const { data: dbProducts, error: productsError } = await supabase
     .from('products')
-    .select('id, price, title, is_active')
+    .select('id, price, title, is_active, stock_quantity')
     .in('id', productIds)
 
   if (productsError || !dbProducts?.length) {
@@ -32,8 +32,13 @@ export async function POST(request: Request) {
   )
 
   for (const item of items as RequestItem[]) {
-    if (!productMap[item.id]?.is_active) {
+    const product = productMap[item.id]
+    if (!product?.is_active) {
       return Response.json({ error: 'Produto indisponível.' }, { status: 400 })
+    }
+    const available = product.stock_quantity ?? 0
+    if (available < item.quantity) {
+      return Response.json({ error: 'Estoque insuficiente.' }, { status: 409 })
     }
   }
 
@@ -76,6 +81,22 @@ export async function POST(request: Request) {
   const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
   if (itemsError) {
     console.error('Erro ao criar itens do pedido:', itemsError)
+  }
+
+  // Decrementa estoque atomicamente — WHERE stock_quantity >= qty impede corrida entre requisições
+  for (const item of items as RequestItem[]) {
+    const currentStock = productMap[item.id].stock_quantity ?? 0
+    const newStock = currentStock - item.quantity
+    const { data: updated } = await supabase
+      .from('products')
+      .update({ stock_quantity: newStock })
+      .eq('id', item.id)
+      .gte('stock_quantity', item.quantity)
+      .select('id')
+
+    if (!updated?.length) {
+      return Response.json({ error: 'Estoque insuficiente. Tente novamente.' }, { status: 409 })
+    }
   }
 
   if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
