@@ -1,4 +1,4 @@
-import { supabase } from '@/app/lib/supabase'
+import { createSupabaseServerClient } from '@/app/lib/supabase-server'
 import { formatCurrency } from '@/app/lib/format'
 import AddToCartButton from '@/app/components/AddToCartButton'
 import CartLink from '@/app/components/CartLink'
@@ -10,6 +10,7 @@ type Props = {
 
 export default async function ProdutoPage({ params }: Props) {
     const { id } = await params
+    const supabase = createSupabaseServerClient()
 
     const { data: product, error } = await supabase
         .from('products')
