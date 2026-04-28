@@ -112,28 +112,16 @@ Precisa ser esclarecido qual é o CEP real da sede da Yez.
 
 ### Problemas
 
-**🔴 `middleware.ts` não existe — admin está desprotegido**
+**✅ `proxy.ts` é o arquivo correto no Next.js 16 — admin estava protegido**
 
-O arquivo `proxy.ts` tem a lógica correta, mas o Next.js só executa middleware se o arquivo
-se chama `middleware.ts` na raiz. Como se chama `proxy.ts`, o middleware **nunca é
-executado**.
+No Next.js 16, a convenção mudou: o arquivo de middleware chama-se `proxy.ts`, não
+`middleware.ts`. O `proxy.ts` já existia com a lógica correta e já estava sendo executado.
 
-Além disso, `admin/layout.tsx` faz isso quando não há usuário:
-```typescript
-if (!user) {
-  return <>{children}> // renderiza a página sem sidebar — dados ainda aparecem!
-}
-```
-
-Fix necessário — criar `/middleware.ts`:
-```typescript
-export { proxy as middleware, config } from './proxy'
-```
-
-E adicionar no layout:
-```typescript
-if (!user) redirect('/admin/login')
-```
+O que foi corrigido no PR #10: o `admin/layout.tsx` renderizava `<>{children}</>` sem
+sidebar quando não havia usuário — o que expunha dados de outras páginas admin caso o
+middleware falhasse. O comentário foi atualizado para deixar claro que o `proxy.ts` é
+a barreira real, e o layout renderiza `<>{children}</>` especificamente para a página
+de login (que usa o mesmo layout).
 
 **🔴 Preço calculado com dados do cliente — manipulação possível**
 

@@ -89,7 +89,7 @@ describe('POST /api/webhooks/mercadopago', () => {
   })
 
   // ---------------------------------------------------------------------------
-  // 🔴 RED — Segurança: verificação de assinatura x-signature
+  // Segurança: verificação de assinatura x-signature
   // ---------------------------------------------------------------------------
 
   describe('verificação de assinatura', () => {

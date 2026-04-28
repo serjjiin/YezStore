@@ -163,7 +163,7 @@ describe('POST /api/checkout', () => {
   })
 
   // ---------------------------------------------------------------------------
-  // 🔴 RED — Segurança: preço deve vir do banco, não do cliente
+  // Segurança: preço deve vir do banco, não do cliente
   // ---------------------------------------------------------------------------
 
   describe('segurança — validação de preço', () => {

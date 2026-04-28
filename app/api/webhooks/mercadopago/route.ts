@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 
 // Verifica a assinatura HMAC-SHA256 enviada pelo Mercado Pago no header x-signature.
@@ -22,9 +22,11 @@ function verifyMpSignature(
   if (!ts || !v1) return false
 
   const manifest = `id:${dataId};request-id:${xRequestId ?? ''};ts:${ts};`
-  const computed = createHmac('sha256', secret).update(manifest).digest('hex')
+  const computedBuf = Buffer.from(createHmac('sha256', secret).update(manifest).digest('hex'))
+  const v1Buf = Buffer.from(v1)
 
-  return computed === v1
+  // timingSafeEqual previne timing attacks; requer buffers de mesmo tamanho
+  return computedBuf.byteLength === v1Buf.byteLength && timingSafeEqual(computedBuf, v1Buf)
 }
 
 // O Mercado Pago envia notificações IPN/webhook neste endpoint.

@@ -84,3 +84,10 @@ create policy "Admin real deleta imagens" on storage.objects
   for delete
   to authenticated
   using (bucket_id = 'produtos' and is_admin());
+
+-- ------------------------------------------------------------
+-- Grant: permite que a role authenticated execute is_admin()
+-- Necessário para que as políticas RLS funcionem com o anon key + JWT
+-- (Se já rodou a migration acima, execute só esta linha)
+-- ------------------------------------------------------------
+grant execute on function is_admin() to authenticated;
