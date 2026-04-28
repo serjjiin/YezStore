@@ -50,9 +50,16 @@ Há três helpers em `app/lib/supabase-server.ts` e `app/lib/supabase-browser.ts
 
 1. Cliente adiciona itens → estado Zustand (`useCartStore`)
 2. `FreteCalculator` chama `POST /api/frete` → Melhor Envio API
-3. `POST /api/checkout` cria `orders` + `order_items` no Supabase e retorna `init_point` do Mercado Pago
+3. `POST /api/checkout`:
+   - Busca preços do banco (nunca confia no cliente)
+   - Valida `stock_quantity >= qty` → 409 se insuficiente
+   - Cria `orders` + `order_items`
+   - Decrementa estoque atomicamente (`UPDATE ... WHERE stock_quantity >= qty`)
+   - Retorna `init_point` do Mercado Pago
 4. Cliente é redirecionado para o Mercado Pago; ao retornar cai em `/checkout/sucesso|pendente|falha`
-5. `POST /api/webhooks/mercadopago` atualiza `orders.status` e `mp_payment_id` via service role
+5. `POST /api/webhooks/mercadopago`:
+   - Verifica assinatura HMAC-SHA256 (`x-signature`) se `MERCADO_PAGO_WEBHOOK_SECRET` definido
+   - Atualiza `orders.status` e `mp_payment_id` via service role
 
 ### Banco de dados (Supabase/PostgreSQL)
 

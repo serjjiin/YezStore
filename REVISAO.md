@@ -2,6 +2,25 @@
 
 > Diagnóstico feito em 2026-04-27. Cobre domínio, requisitos, arquitetura, segurança,
 > qualidade de código, testes, documentação e metodologia.
+> **Atualizado em 2026-04-28** — status de implementação adicionado abaixo.
+
+---
+
+## Status de Implementação (2026-04-28)
+
+Itens da seção "Roadmap de ação — Imediato" resolvidos nos PRs #10 e #11:
+
+| # | Item | Status | PR |
+|---|---|---|---|
+| 1 | Redirect real em /admin/\* quando não autenticado | ✅ `proxy.ts` já protegia — layout corrigido | #10 |
+| 2 | Validar preços no servidor no `/api/checkout` | ✅ Preço buscado do banco, nunca do cliente | #10 |
+| 3 | Verificar assinatura `x-signature` no webhook MP | ✅ HMAC-SHA256 com `timingSafeEqual` | #10 |
+| 4 | Validar e bloquear estoque com transação atômica | ✅ 409 + `UPDATE WHERE stock_quantity >= qty` | #11 |
+| 5 | Corrigir RLS policies para verificar role de admin | ✅ `is_admin()` checa `app_metadata.role` | #10 |
+| 6 | Testes para `api/checkout` e `api/webhooks` com mocks | ✅ 33 testes de API (total: 63) | #10/#11 |
+| 7 | Configurar GitHub Actions com lint + test | ✅ `.github/workflows/ci.yml` | #10 |
+
+Pendente da lista original: CEP de origem conflitante (73086130 no código, 70000000 no `CLAUDE.md` antigo — **confirmar com a equipe**).
 
 ---
 

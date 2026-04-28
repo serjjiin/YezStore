@@ -1,7 +1,7 @@
 # Yez Store — Documentação Completa do Projeto
 
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
-> Última atualização: 2026-04-27 (limpeza — seção de análise do PR #6 removida)
+> Última atualização: 2026-04-28 — PRs #7–#11 registrados; segurança crítica resolvida
 
 > 📋 **Revisão técnica completa disponível em [`REVISAO.md`](./REVISAO.md)** — diagnóstico de domínio, segurança, arquitetura, código e metodologia com roadmap de ação priorizado.
 
@@ -87,7 +87,7 @@
 | RF-02.3 | Redirecionar para pagamento no Mercado Pago | ⏳ Aguardando conta MP |
 | RF-02.4 | Exibir página de sucesso/falha/pendente após pagamento | ✅ (páginas prontas) |
 | RF-02.5 | Limpar carrinho após compra confirmada | ✅ |
-| RF-02.6 | Validar estoque antes de finalizar pedido | ❌ |
+| RF-02.6 | Validar estoque e decrementar atomicamente no checkout | ✅ |
 | RF-02.7 | Enviar email de confirmação ao cliente | ❌ |
 
 ### RF-03 — Webhooks e Status
@@ -96,7 +96,7 @@
 |---|---|---|
 | RF-03.1 | Receber notificação de pagamento do Mercado Pago | ⏳ Aguardando conta MP |
 | RF-03.2 | Atualizar status do pedido automaticamente | ⏳ Aguardando conta MP |
-| RF-03.3 | Verificar assinatura do webhook (segurança) | ❌ |
+| RF-03.3 | Verificar assinatura do webhook (segurança) | ✅ |
 
 ### RF-04 — Painel Admin
 
@@ -111,7 +111,7 @@
 | RF-04.7 | Ver detalhe do pedido | ✅ |
 | RF-04.8 | Atualizar status do pedido manualmente | ✅ |
 | RF-04.9 | Relatório de repasse financeiro por artesão | ❌ |
-| RF-04.10 | Baixa automática de estoque ao confirmar pagamento | ❌ |
+| RF-04.10 | Restaurar estoque se pagamento falhar (webhook) | ❌ |
 | RF-04.11 | Feedback de erro inline nas ações do admin | ✅ |
 | RF-04.12 | Botão de reativar produto desativado | ✅ |
 
@@ -125,8 +125,8 @@
 |---|---|---|
 | RNF-01.1 | Rotas admin protegidas por autenticação | ✅ |
 | RNF-01.2 | Credenciais nunca expostas ao cliente | ✅ |
-| RNF-01.3 | RLS ativo no Supabase | ✅ (parcial) |
-| RNF-01.4 | Verificação de assinatura do webhook MP | ❌ |
+| RNF-01.3 | RLS ativo no Supabase (policies com `is_admin()`) | ✅ |
+| RNF-01.4 | Verificação de assinatura do webhook MP (HMAC-SHA256) | ✅ |
 | RNF-01.5 | Rate limiting nas rotas de API públicas | ❌ |
 
 ### RNF-02 — Qualidade de código
@@ -137,6 +137,8 @@
 | RNF-02.2 | Formatação de moeda em pt-BR (`R$ 120,00`) | ✅ |
 | RNF-02.3 | Acessibilidade básica (focus, aria-labels) | ✅ |
 | RNF-02.4 | Imagens com aspect-ratio correto | ✅ |
+| RNF-02.5 | CI/CD com GitHub Actions (lint + testes em todo push/PR) | ✅ |
+| RNF-02.6 | Cobertura de testes (63 testes — Vitest + TDD) | ✅ |
 
 ---
 
@@ -192,6 +194,8 @@ orders (id, customer_name, customer_email, customer_phone, status,
 Cria pedido no Supabase e inicia pagamento no Mercado Pago.
 - **Requer:** dados do cliente, itens, frete selecionado, endereço
 - **Retorna:** `{ order_id, init_point, sandbox_init_point }`
+- **Segurança:** preços buscados do banco; estoque validado e decrementado atomicamente
+- **Erros:** 400 (dados inválidos / produto inativo), 409 (estoque insuficiente), 500 (DB), 503 (sem token MP)
 - **Depende de:** `MERCADO_PAGO_ACCESS_TOKEN` válido
 
 ### POST /api/frete
@@ -203,7 +207,7 @@ Calcula opções de frete via Melhor Envio.
 ### POST /api/webhooks/mercadopago
 Recebe notificação de pagamento e atualiza status do pedido.
 - **Sempre retorna 200** (evita reenvios do MP)
-- **Pendente:** verificação de assinatura `x-signature`
+- **Segurança:** verifica assinatura HMAC-SHA256 (`x-signature`) se `MERCADO_PAGO_WEBHOOK_SECRET` configurado
 
 ---
 
@@ -232,16 +236,20 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 ## 9. Segurança
 
 ### Protegido
-- Rotas `/admin/*` → middleware verifica sessão Supabase
+- Rotas `/admin/*` → `proxy.ts` (middleware Next.js 16) verifica sessão Supabase
 - `SUPABASE_SERVICE_ROLE_KEY` e `MERCADO_PAGO_ACCESS_TOKEN` — nunca ao cliente
+- Preços sempre buscados do banco no checkout (nunca confiando no body do cliente)
+- RLS com `is_admin()` — verifica `app_metadata.role = 'admin'` no JWT, não só `authenticated`
+- Webhook MP com verificação de assinatura HMAC-SHA256 via `timingSafeEqual` (timing-safe)
+- Estoque validado e decrementado atomicamente — guard `WHERE stock_quantity >= qty` previne corrida
 
 ### Vulnerabilidades conhecidas (a corrigir)
 
 | Risco | Descrição | Solução |
 |---|---|---|
-| Alto | Webhook MP sem verificação de assinatura | Verificar header `x-signature` |
 | Médio | Sem rate limiting em `/api/frete` e `/api/checkout` | Vercel Edge Middleware |
-| Médio | Sem validação de estoque no checkout | Checar `stock_quantity` antes de criar pedido |
+| Médio | Sem restauração de estoque se pagamento falhar | Webhook `cancelled` → `stock_quantity += qty` |
+| Baixo | Sem sanitização XSS nos campos de texto admin | `sanitize-html` ou Content-Security-Policy |
 
 ---
 
@@ -323,22 +331,24 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 - [x] Sacola com fotos, contador no nav, feedback de adição
 - [x] Cálculo de frete real (Melhor Envio produção)
 - [x] Checkout com auto-preenchimento de CEP (ViaCEP)
-- [x] Páginas de retorno do Mercado Pago (aguardando conta)
+- [x] Páginas de retorno do Mercado Pago (aguardando conta MP)
 - [x] Painel admin completo (login, produtos, artesãos, pedidos)
 - [x] Formatação de moeda em pt-BR
 - [x] Acessibilidade básica (focus, aria-labels)
-- [x] Hover nos cards de produto
 - [x] Proteção de branch `main` no GitHub
 - [x] Repositório público em `github.com/serjjiin/YezStore`
+- [x] Preço buscado do banco no checkout (segurança anti-manipulação)
+- [x] Verificação de assinatura HMAC-SHA256 no webhook MP
+- [x] RLS com `is_admin()` — policies corretas por role
+- [x] Validação e decremento atômico de estoque no checkout
+- [x] CI/CD com GitHub Actions (lint + 63 testes a cada push/PR)
 
 ### O que falta para produção completa
 
 | Prioridade | Item |
 |---|---|
 | 🔴 Alta | Criar conta Mercado Pago + configurar token |
-| 🔴 Alta | Verificação de assinatura do webhook MP |
-| 🔴 Alta | Validação de estoque no checkout |
-| 🔴 Alta | Baixa automática de estoque ao pagar |
+| 🔴 Alta | Restaurar estoque se pagamento falhar (webhook `cancelled`) |
 | 🟡 Média | Email de confirmação ao cliente |
 | 🟡 Média | Relatório de repasse por artesão |
 | 🟡 Média | SEO (meta tags por página) |
@@ -354,9 +364,9 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 
 ### Fase 1 — Produção (bloqueado por Mercado Pago)
 - [ ] Criar conta Mercado Pago e configurar `MERCADO_PAGO_ACCESS_TOKEN`
-- [ ] Verificar assinatura do webhook MP (`x-signature`)
-- [ ] Validar estoque no checkout (transação atômica)
-- [ ] Baixar estoque automaticamente quando `status → paid`
+- [x] ~~Verificar assinatura do webhook MP (`x-signature`)~~ — PR #10
+- [x] ~~Validar estoque no checkout (transação atômica)~~ — PR #11
+- [ ] Restaurar estoque quando pagamento falhar (webhook `cancelled`)
 - [ ] Configurar webhook URL no painel MP apontando para produção
 
 ### Fase 2 — Operação
@@ -388,8 +398,10 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | Peso de frete estimado (300g/item) | Médio | Adicionar `weight_grams` em `products` |
 | Dimensões de embalagem hardcoded | Médio | Cadastrar por produto ou categoria |
 | `<img>` em vez de `next/image` | Baixo | Substituir para otimização |
-| ~~Sem testes automatizados~~ | ~~Alto~~ | Vitest configurado — ver `TESTES.md` |
-| API routes sem cobertura de testes | Alto | Aguardando `.env` — usar mocks quando disponível |
+| `ShippingOption.price` é `string` | Baixo | Trocar por `number` e remover `parseFloat()` espalhado |
+| Carrinho não persiste ao recarregar | Médio | Zustand `persist` middleware |
+| Sem restauração de estoque em falha | Alto | Webhook `cancelled` → `stock_quantity += qty` |
+| ~~API routes sem cobertura~~ | ~~Alto~~ | ~~63 testes com Vitest + TDD — PR #10/#11~~ |
 
 ---
 
@@ -466,3 +478,8 @@ git checkout main && git pull  # após merge
 | #4 | Auto-preenchimento de CEP no checkout | ✅ Merged |
 | #5 | Bloqueio de estoque esgotado (AddToCartButton + prod detail) | ✅ Merged |
 | #6 | Correções do painel admin (erro inline, reativar produto, status centralizado, formatCurrency) | ✅ Merged |
+| #7 | Fix: padroniza setLoading e corrige erro de lint | ✅ Merged |
+| #8 | Responsividade, UX e melhorias de design do frontend | ✅ Merged |
+| #9 | Docs: remove seção obsoleta do PR #6 e corrige numeração | ✅ Merged |
+| #10 | TDD, testes de API (63 testes) e correções de segurança críticas (preço do banco, assinatura webhook, RLS com `is_admin()`, CI/CD) | ✅ Merged |
+| #11 | Validação e decremento atômico de estoque no checkout | ⏳ Em revisão |
