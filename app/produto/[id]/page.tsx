@@ -228,7 +228,7 @@ export default async function ProdutoPage({ params }: Props) {
                                     }
                                 </div>
                                 <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--yez-gray)', marginBottom: 4 }}>
-                                    {(rel.artisans as { name: string } | null)?.name}
+                                    {(rel.artisans as unknown as { name: string } | null)?.name}
                                 </div>
                                 <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3, marginBottom: 6 }}>
                                     {rel.title}

@@ -112,6 +112,7 @@ export async function POST(request: Request) {
   const preference = new Preference(client)
 
   const mpItems = (items as RequestItem[]).map((item) => ({
+    id: item.id,
     title: productMap[item.id].title,
     quantity: item.quantity,
     unit_price: productMap[item.id].price,
@@ -120,6 +121,7 @@ export async function POST(request: Request) {
 
   if (shippingCost > 0) {
     mpItems.push({
+      id: 'frete',
       title: `Frete (${shipping?.name ?? 'Entrega'})`,
       quantity: 1,
       unit_price: shippingCost,
