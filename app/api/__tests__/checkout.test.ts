@@ -27,12 +27,14 @@ interface SmartChainOptions {
   products?: ProductRow[]
   orderResult?: { data: { id: string } | null; error: { message: string } | null }
   stockDecrementResult?: { id: string }[]
+  itemsInsertError?: { message: string } | null
 }
 
 function makeSmartChain({
   products = [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 5 }],
   orderResult = { data: { id: 'order-uuid' }, error: null },
   stockDecrementResult = [{ id: 'prod-1' }],
+  itemsInsertError = null,
 }: SmartChainOptions = {}) {
   const inSpy = vi.fn().mockResolvedValue({ data: products, error: null })
   const orderInsertSpy = vi.fn(() => ({
@@ -40,7 +42,7 @@ function makeSmartChain({
       single: vi.fn().mockResolvedValue(orderResult),
     })),
   }))
-  const itemsInsertSpy = vi.fn().mockResolvedValue({ error: null })
+  const itemsInsertSpy = vi.fn().mockResolvedValue({ error: itemsInsertError })
   const updateSpy = vi.fn(() => ({ eq: vi.fn().mockResolvedValue({}) }))
   const productsUpdateSpy = vi.fn(() => ({
     eq: vi.fn(() => ({
@@ -117,6 +119,17 @@ describe('POST /api/checkout', () => {
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(500)
+    })
+
+    it('retorna 500 se a inserção de order_items falhar — não continua para o MP', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain({ itemsInsertError: { message: 'Items DB error' } })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+
+      const res = await POST(makeRequest(validBody))
+      expect(res.status).toBe(500)
+      // MP não deve ser chamado se itens falharam
+      expect(mockPrefCreate).not.toHaveBeenCalled()
     })
   })
 
@@ -284,5 +297,116 @@ describe('POST /api/checkout', () => {
 
   it('garante que Preference foi importado pelo mock', () => {
     expect(Preference).toBeDefined()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Preferência Mercado Pago — body enviado ao MP
+  // ---------------------------------------------------------------------------
+
+  describe('preferência Mercado Pago — body enviado', () => {
+    it('cria preferência com items, payer, back_urls, external_reference e statement_descriptor corretos', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: 'https://mp.com/pay', sandbox_init_point: '' })
+
+      await POST(makeRequest(validBody))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.items[0]).toMatchObject({
+        title: 'Sousplat',
+        quantity: 2,
+        unit_price: 50,
+        currency_id: 'BRL',
+      })
+      expect(prefArg.body.payer).toEqual({ name: 'Ana', email: 'ana@test.com' })
+      expect(prefArg.body.back_urls).toMatchObject({
+        success: expect.stringContaining('/checkout/sucesso'),
+        failure: expect.stringContaining('/checkout/falha'),
+        pending: expect.stringContaining('/checkout/pendente'),
+      })
+      expect(prefArg.body.external_reference).toBe('order-uuid')
+      expect(prefArg.body.statement_descriptor).toBe('Yez Store')
+    })
+
+    it('adiciona frete como item separado quando shippingCost > 0', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      await POST(makeRequest(validBody)) // shipping.price = '18.50'
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      const freteItem = prefArg.body.items.find((i: { title: string }) => i.title.includes('Frete'))
+      expect(freteItem).toMatchObject({ unit_price: 18.5, quantity: 1, currency_id: 'BRL' })
+    })
+
+    it('não adiciona item de frete quando shipping é nulo', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      const bodyWithoutShipping = { ...validBody, shipping: null }
+      await POST(makeRequest(bodyWithoutShipping))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      const freteItem = prefArg.body.items.find((i: { title: string }) => i.title.includes('Frete'))
+      expect(freteItem).toBeUndefined()
+      expect(prefArg.body.items).toHaveLength(1)
+    })
+
+    it('salva mp_preference_id no pedido após criar preferência', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client, updateSpy } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-xyz', init_point: '', sandbox_init_point: '' })
+
+      await POST(makeRequest(validBody))
+
+      expect(updateSpy).toHaveBeenCalledWith({ mp_preference_id: 'pref-xyz' })
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Comportamento localhost vs produção
+  // ---------------------------------------------------------------------------
+
+  describe('comportamento localhost vs produção', () => {
+    it('em localhost (URL padrão): não envia auto_return nem notification_url ao MP', async () => {
+      // NEXT_PUBLIC_BASE_URL não definido → baseUrl = 'http://localhost:3000' → isLocalhost = true
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      await POST(makeRequest(validBody))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.auto_return).toBeUndefined()
+      expect(prefArg.body.notification_url).toBeUndefined()
+    })
+
+    it('em produção: envia auto_return=approved e notification_url com domínio correto', async () => {
+      process.env.NEXT_PUBLIC_BASE_URL = 'https://yezstore.com'
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      vi.resetModules()
+
+      const { POST: POSTfresh } = await import('../checkout/route')
+      const { createSupabaseServiceClient: freshCSC } = await import('@/app/lib/supabase-server')
+      const { client } = makeSmartChain()
+      vi.mocked(freshCSC).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      await POSTfresh(makeRequest(validBody))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.auto_return).toBe('approved')
+      expect(prefArg.body.notification_url).toBe('https://yezstore.com/api/webhooks/mercadopago')
+
+      delete process.env.NEXT_PUBLIC_BASE_URL
+      vi.resetModules()
+    })
   })
 })

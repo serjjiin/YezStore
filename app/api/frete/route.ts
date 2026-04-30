@@ -1,5 +1,6 @@
 export async function POST(request: Request) {
-  const { cep, totalItems } = await request.json()
+  const body = await request.json().catch(() => null)
+  const { cep, totalItems } = body ?? {}
 
   const token = process.env.MELHOR_ENVIO_TOKEN
   const baseUrl = process.env.MELHOR_ENVIO_URL ?? 'https://sandbox.melhorenvio.com.br'
@@ -9,12 +10,22 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Token do Melhor Envio não configurado.' }, { status: 500 })
   }
 
-  // Peso estimado: 300g por item, mínimo 100g
-  const weight = Math.max(totalItems * 0.3, 0.1)
+  const cepDigits = String(cep ?? '').replace(/\D/g, '')
+  if (cepDigits.length !== 8) {
+    return Response.json({ error: 'CEP inválido. Informe 8 dígitos numéricos.' }, { status: 400 })
+  }
 
-  const body = {
+  const qty = Number(totalItems)
+  if (!Number.isFinite(qty) || qty < 1) {
+    return Response.json({ error: 'Quantidade de itens inválida.' }, { status: 400 })
+  }
+
+  // Peso estimado: 300g por item, mínimo 100g
+  const weight = Math.max(qty * 0.3, 0.1)
+
+  const requestBody = {
     from: { postal_code: cepOrigem },
-    to: { postal_code: cep },
+    to: { postal_code: cepDigits },
     package: {
       height: 10,
       width: 20,
@@ -35,10 +46,11 @@ export async function POST(request: Request) {
       Authorization: `Bearer ${token}`,
       'User-Agent': 'Aplicação Yez Store (contato@yezstore.com.br)',
     },
-    body: JSON.stringify(body),
-  })
+    body: JSON.stringify(requestBody),
+    signal: AbortSignal.timeout(8000),
+  }).catch(() => null)
 
-  if (!response.ok) {
+  if (!response?.ok) {
     return Response.json({ error: 'Erro ao consultar Melhor Envio.' }, { status: 502 })
   }
 

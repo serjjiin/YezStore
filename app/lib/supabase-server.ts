@@ -16,9 +16,15 @@ export async function createSupabaseServerClient() {
           return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
+          // Em Server Components o cookieStore é read-only; o refresh de sessão
+          // é feito pelo middleware (proxy.ts). Silenciar é o padrão do Supabase SSR.
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Server Component — ignorar
+          }
         },
       },
     }

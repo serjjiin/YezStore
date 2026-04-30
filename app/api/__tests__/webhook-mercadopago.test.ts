@@ -7,16 +7,32 @@ vi.mock('@/app/lib/supabase-server', () => ({
   createSupabaseServiceClient: vi.fn(),
 }))
 
-// Cria mock do cliente Supabase — expõe updateSpy para que os testes possam
-// verificar com quais argumentos .update() foi chamado.
-function makeSupabaseChain() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const chain: Record<string, any> = {}
-  const updateSpy = vi.fn().mockReturnValue(chain)
-  chain.from = vi.fn().mockReturnValue(chain)
-  chain.update = updateSpy
-  chain.eq = vi.fn().mockReturnValue(chain)
-  return { client: chain, updateSpy }
+type OrderItem = { product_id: string; quantity: number }
+
+// Cria mock do cliente Supabase com suporte a tabelas distintas.
+// orderItems: itens a retornar quando order_items.select().eq() for chamado (usado nos testes de restauração de estoque).
+function makeSupabaseChain(orderItems: OrderItem[] = []) {
+  const rpcSpy = vi.fn().mockResolvedValue({ data: null, error: null })
+
+  const updateSpy = vi.fn()
+  const updateEqSpy = vi.fn().mockResolvedValue({})
+  updateSpy.mockReturnValue({ eq: updateEqSpy })
+
+  const orderItemsSelectSpy = vi.fn()
+  const orderItemsEqSpy = vi.fn().mockResolvedValue({ data: orderItems, error: null })
+  orderItemsSelectSpy.mockReturnValue({ eq: orderItemsEqSpy })
+
+  const client = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    from: vi.fn((table: string): any => {
+      if (table === 'orders') return { update: updateSpy }
+      if (table === 'order_items') return { select: orderItemsSelectSpy }
+      return {}
+    }),
+    rpc: rpcSpy,
+  }
+
+  return { client, updateSpy, rpcSpy }
 }
 
 // Stub do fetch global para simular resposta da API do Mercado Pago
@@ -215,6 +231,73 @@ describe('POST /api/webhooks/mercadopago', () => {
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
 
       expect(updateSpy).toHaveBeenCalledWith({ status: 'cancelled', mp_payment_id: '42' })
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Restauração de estoque em pagamento cancelado/rejeitado
+  // ---------------------------------------------------------------------------
+
+  describe('restauração de estoque', () => {
+    beforeEach(() => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+    })
+
+    it('chama increment_stock para cada item quando pagamento for rejeitado', async () => {
+      const items: OrderItem[] = [
+        { product_id: 'prod-a', quantity: 2 },
+        { product_id: 'prod-b', quantity: 1 },
+      ]
+      const { client, rpcSpy } = makeSupabaseChain(items)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      mockMpFetch({ status: 'rejected', external_reference: 'order-uuid', id: 42 })
+
+      await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
+
+      expect(rpcSpy).toHaveBeenCalledTimes(2)
+      expect(rpcSpy).toHaveBeenCalledWith('increment_stock', { p_product_id: 'prod-a', p_qty: 2 })
+      expect(rpcSpy).toHaveBeenCalledWith('increment_stock', { p_product_id: 'prod-b', p_qty: 1 })
+    })
+
+    it('chama increment_stock quando pagamento for cancelado', async () => {
+      const items: OrderItem[] = [{ product_id: 'prod-a', quantity: 3 }]
+      const { client, rpcSpy } = makeSupabaseChain(items)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      mockMpFetch({ status: 'cancelled', external_reference: 'order-uuid', id: 42 })
+
+      await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
+
+      expect(rpcSpy).toHaveBeenCalledWith('increment_stock', { p_product_id: 'prod-a', p_qty: 3 })
+    })
+
+    it('não chama increment_stock quando pagamento for aprovado', async () => {
+      const { client, rpcSpy } = makeSupabaseChain([{ product_id: 'prod-a', quantity: 1 }])
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      mockMpFetch({ status: 'approved', external_reference: 'order-uuid', id: 42 })
+
+      await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
+
+      expect(rpcSpy).not.toHaveBeenCalled()
+    })
+
+    it('não chama increment_stock quando pagamento estiver pendente', async () => {
+      const { client, rpcSpy } = makeSupabaseChain([{ product_id: 'prod-a', quantity: 1 }])
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      mockMpFetch({ status: 'pending', external_reference: 'order-uuid', id: 42 })
+
+      await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
+
+      expect(rpcSpy).not.toHaveBeenCalled()
+    })
+
+    it('não chama increment_stock se não houver itens no pedido', async () => {
+      const { client, rpcSpy } = makeSupabaseChain([]) // sem itens
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      mockMpFetch({ status: 'cancelled', external_reference: 'order-uuid', id: 42 })
+
+      await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
+
+      expect(rpcSpy).not.toHaveBeenCalled()
     })
   })
 })

@@ -81,6 +81,7 @@ export async function POST(request: Request) {
   const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
   if (itemsError) {
     console.error('Erro ao criar itens do pedido:', itemsError)
+    return Response.json({ error: 'Erro ao criar pedido.' }, { status: 500 })
   }
 
   // Decrementa estoque atomicamente — WHERE stock_quantity >= qty impede corrida entre requisições
@@ -126,6 +127,8 @@ export async function POST(request: Request) {
     })
   }
 
+  const isLocalhost = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')
+
   const preferenceBody = {
     items: mpItems,
     payer: {
@@ -137,8 +140,8 @@ export async function POST(request: Request) {
       failure: `${baseUrl}/checkout/falha`,
       pending: `${baseUrl}/checkout/pendente`,
     },
-    auto_return: 'approved' as const,
-    notification_url: `${baseUrl}/api/webhooks/mercadopago`,
+    ...(isLocalhost ? {} : { auto_return: 'approved' as const }),
+    ...(isLocalhost ? {} : { notification_url: `${baseUrl}/api/webhooks/mercadopago` }),
     external_reference: order.id,
     statement_descriptor: 'Yez Store',
   }

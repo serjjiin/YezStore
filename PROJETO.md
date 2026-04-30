@@ -1,7 +1,7 @@
 # Yez Store — Documentação Completa do Projeto
 
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
-> Última atualização: 2026-04-28 — PRs #7–#11 registrados; segurança crítica resolvida
+> Última atualização: 2026-04-30 — TDD de componentes completo (163 testes); restauração de estoque via webhook implementada
 
 > 📋 **Revisão técnica completa disponível em [`REVISAO.md`](./REVISAO.md)** — diagnóstico de domínio, segurança, arquitetura, código e metodologia com roadmap de ação priorizado.
 
@@ -138,7 +138,7 @@
 | RNF-02.3 | Acessibilidade básica (focus, aria-labels) | ✅ |
 | RNF-02.4 | Imagens com aspect-ratio correto | ✅ |
 | RNF-02.5 | CI/CD com GitHub Actions (lint + testes em todo push/PR) | ✅ |
-| RNF-02.6 | Cobertura de testes (63 testes — Vitest + TDD) | ✅ |
+| RNF-02.6 | Cobertura de testes (163 testes — Vitest + TDD) | ✅ |
 
 ---
 
@@ -341,7 +341,8 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 - [x] Verificação de assinatura HMAC-SHA256 no webhook MP
 - [x] RLS com `is_admin()` — policies corretas por role
 - [x] Validação e decremento atômico de estoque no checkout
-- [x] CI/CD com GitHub Actions (lint + 63 testes a cada push/PR)
+- [x] CI/CD com GitHub Actions (lint + 163 testes a cada push/PR)
+- [x] TDD completo de componentes React (CartLink, AddToCartButton, FreteCalculator, sacola/page, checkout/page)
 
 ### O que falta para produção completa
 
@@ -400,8 +401,9 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | `<img>` em vez de `next/image` | Baixo | Substituir para otimização |
 | `ShippingOption.price` é `string` | Baixo | Trocar por `number` e remover `parseFloat()` espalhado |
 | Carrinho não persiste ao recarregar | Médio | Zustand `persist` middleware |
-| Sem restauração de estoque em falha | Alto | Webhook `cancelled` → `stock_quantity += qty` |
-| ~~API routes sem cobertura~~ | ~~Alto~~ | ~~63 testes com Vitest + TDD — PR #10/#11~~ |
+| ~~Sem restauração de estoque em falha~~ | ~~Alto~~ | ~~Webhook `cancelled` implementado — migration 004 pendente~~ |
+| ~~API routes sem cobertura~~ | ~~Alto~~ | ~~163 testes com Vitest + TDD — PR #10/#11~~ |
+| `ShippingOption.price` é `string` | Baixo | Trocar por `number` e remover `parseFloat()` espalhado |
 
 ---
 
@@ -482,4 +484,5 @@ git checkout main && git pull  # após merge
 | #8 | Responsividade, UX e melhorias de design do frontend | ✅ Merged |
 | #9 | Docs: remove seção obsoleta do PR #6 e corrige numeração | ✅ Merged |
 | #10 | TDD, testes de API (63 testes) e correções de segurança críticas (preço do banco, assinatura webhook, RLS com `is_admin()`, CI/CD) | ✅ Merged |
-| #11 | Validação e decremento atômico de estoque no checkout | ⏳ Em revisão |
+| #11 | Validação e decremento atômico de estoque no checkout | ✅ Merged |
+| #12 | TDD de componentes React: CartLink, AddToCartButton, FreteCalculator, sacola/page, checkout/page (163 testes total) | 🔄 Branch atual |
