@@ -6,7 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Início de sessão
 
-Ao iniciar uma nova conversa, leia `PROJETO.md` para entender o estado atual do projeto — o que foi implementado, o que está pendente e as decisões tomadas. Mantenha `PROJETO.md` atualizado ao final de cada conjunto de mudanças significativas.
+Ao iniciar uma nova conversa:
+1. Leia `PROJETO.md` — estado atual, o que foi implementado, o que está pendente
+2. Consulte os [GitHub Issues](https://github.com/serjjiin/YezStore/issues) para ver o backlog priorizado
+3. Mantenha `PROJETO.md` atualizado ao final de cada conjunto de mudanças significativas
+
+## Workflow de desenvolvimento (XP)
+
+```
+1. Escolher uma issue do backlog (github.com/serjjiin/YezStore/issues)
+2. git checkout -b feat/nome-curto
+3. Escrever o teste (RED) → implementar (GREEN) → /simplify antes do PR
+4. gh pr create → /review → squash and merge → fechar a issue
+5. git fetch --prune origin && git checkout main && git pull
+```
+
+**Branch strategy:** apenas `main` (protegida) + branches de feature de vida curta. Sem branch de dev ou staging — o Vercel gera preview automático para cada PR.
 
 ## Comandos
 
@@ -18,7 +33,14 @@ npm test             # roda todos os testes (Vitest)
 npm run test:watch   # modo watch — re-executa ao salvar
 ```
 
-Metodologia TDD adotada — ver `TESTES.md` para guia completo, estrutura e próximos passos.
+Metodologia TDD obrigatória — ver `TESTES.md` para guia completo, estrutura e próximos passos.
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/ci.yml`) roda em todo push e PR:
+- Node 24 + npm 11 (gerado com `npm install`, não `npm ci` — compatibilidade com lockfile multiplataforma)
+- Passos: instala dependências → lint → testes
+- Vercel faz deploy automático no merge para `main` e preview para cada PR
 
 ## Arquitetura
 
@@ -28,11 +50,13 @@ Metodologia TDD adotada — ver `TESTES.md` para guia completo, estrutura e pró
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend + Admin | Next.js 16 + React 19 + Tailwind CSS 4 |
+| Frontend + Admin | Next.js 16 + React 19 + CSS Variables (inline styles + globals.css) |
 | Estado do carrinho | Zustand (`app/lib/store.ts`) |
 | Backend / DB / Auth | Supabase (PostgreSQL + RLS) |
 | Pagamentos | Mercado Pago SDK |
 | Frete | API Melhor Envio |
+
+> Tailwind está instalado mas **não é usado** — todo estilo é CSS Variables com inline styles e classes em `globals.css`.
 
 ### Clientes Supabase
 
@@ -60,6 +84,7 @@ Há três helpers em `app/lib/supabase-server.ts` e `app/lib/supabase-browser.ts
 5. `POST /api/webhooks/mercadopago`:
    - Verifica assinatura HMAC-SHA256 (`x-signature`) se `MERCADO_PAGO_WEBHOOK_SECRET` definido
    - Atualiza `orders.status` e `mp_payment_id` via service role
+   - Se `status = 'cancelled'`: restaura estoque via RPC `increment_stock` (migration 004 — já aplicada no Supabase)
 
 ### Banco de dados (Supabase/PostgreSQL)
 
@@ -71,6 +96,7 @@ Há três helpers em `app/lib/supabase-server.ts` e `app/lib/supabase-browser.ts
 - `orders.total_amount` = produtos + frete (total cobrado do cliente); `shipping_cost` é o detalhamento do frete
 - `unit_price` em `order_items` é snapshot do preço no momento da compra (usado no cálculo de repasse)
 - Schema completo em `supabase/migrations/001_initial_schema.sql`
+- Migration 004 (`increment_stock` RPC) já aplicada no Supabase
 
 ### Variáveis de ambiente
 
@@ -78,10 +104,10 @@ Há três helpers em `app/lib/supabase-server.ts` e `app/lib/supabase-browser.ts
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=       # nunca expor ao cliente
-MERCADO_PAGO_ACCESS_TOKEN=       # usar TEST-... para sandbox
+MERCADO_PAGO_ACCESS_TOKEN=       # APP_USR-... (sandbox) ou produção
 MERCADO_PAGO_WEBHOOK_SECRET=     # secret do webhook MP (Dashboard MP > Webhooks)
 MELHOR_ENVIO_TOKEN=
-MELHOR_ENVIO_URL=                # default: sandbox.melhorenvio.com.br
-MELHOR_ENVIO_CEP_ORIGEM=         # default: 70000000 (Brasília)
+MELHOR_ENVIO_URL=                # https://melhorenvio.com.br (produção)
+MELHOR_ENVIO_CEP_ORIGEM=         # 73086130 (sede da Yez)
 NEXT_PUBLIC_BASE_URL=            # base para back_urls do MP e webhook
 ```
