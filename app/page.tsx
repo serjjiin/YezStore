@@ -11,7 +11,7 @@ export default async function Home({
   searchParams: Promise<{ categoria?: string }>
 }) {
   const { categoria = '' } = await searchParams
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   const [{ data: heroProducts }, { data: products, error }] = await Promise.all([
     supabase

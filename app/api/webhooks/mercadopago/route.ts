@@ -65,10 +65,11 @@ export async function POST(request: Request) {
       headers: {
         Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
       },
+      signal: AbortSignal.timeout(5000),
     }
-  )
+  ).catch(() => null)
 
-  if (!paymentResponse.ok) {
+  if (!paymentResponse?.ok) {
     console.error('Erro ao consultar pagamento MP:', data.id)
     return Response.json({ ok: true })
   }
@@ -95,6 +96,23 @@ export async function POST(request: Request) {
         mp_payment_id: String(paymentId),
       })
       .eq('id', external_reference)
+  }
+
+  // Restaura estoque quando pagamento é cancelado ou rejeitado
+  if (orderStatus === 'cancelled') {
+    const { data: orderItems } = await supabase
+      .from('order_items')
+      .select('product_id, quantity')
+      .eq('order_id', external_reference)
+
+    if (orderItems?.length) {
+      for (const item of orderItems) {
+        await supabase.rpc('increment_stock', {
+          p_product_id: item.product_id,
+          p_qty: item.quantity,
+        })
+      }
+    }
   }
 
   return Response.json({ ok: true })

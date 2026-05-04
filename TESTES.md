@@ -81,6 +81,8 @@ app/lib/
 
 ## O que está testado
 
+**Total: 63 testes — todos passando**
+
 ### `app/lib/__tests__/format.test.ts` — 13 testes
 
 Testa as funções utilitárias de formatação.
@@ -174,49 +176,38 @@ Sem isso, o estado de um teste vazaria para o próximo.
 
 ---
 
+---
+
+### `app/api/__tests__/checkout.test.ts` — 18 testes
+
+Testa o Route Handler `POST /api/checkout` com mocks de Supabase e Mercado Pago.
+
+**Padrão de mock:** `makeSmartChain()` — mock com consciência de tabela que diferencia comportamento por `from('products')`, `from('orders')` e `from('order_items')`.
+
+| Grupo | Teste |
+|---|---|
+| Validação de entrada | 400 sem `customer.name`, sem `customer.email`, sem `items` |
+| Erro no banco | 500 se Supabase falhar ao criar pedido |
+| Sem MP configurado | 503 sem `MERCADO_PAGO_ACCESS_TOKEN` |
+| Sucesso | 200 com `order_id`, `init_point`; itens criados corretamente |
+| Segurança — preço | Ignora preço do cliente, usa banco; 400 se produto não existe; 400 se inativo |
+| Validação de estoque | 409 se estoque insuficiente; 409 se estoque zerado; decremento atômico chamado; 409 em corrida (0 linhas atualizadas) |
+
+---
+
+### `app/api/__tests__/webhook-mercadopago.test.ts` — 15 testes
+
+Testa o Route Handler `POST /api/webhooks/mercadopago` com `vi.stubGlobal('fetch', ...)` para mockar a API do MP.
+
+| Grupo | Teste |
+|---|---|
+| Robustez | Sempre 200 para body inválido, type diferente de payment, `data.id` ausente, token ausente, erro na API do MP |
+| Verificação de assinatura | 401 sem `x-signature`, com hash inválido, com formato errado; processa normalmente com assinatura válida; pula verificação se `MERCADO_PAGO_WEBHOOK_SECRET` não configurado |
+| Atualização de status | `paid`, `cancelled`, `pending`; sem external_reference; cancelado pelo MP |
+
+---
+
 ## O que testar a seguir
-
-### Nível 3 — API Routes (requer mocks)
-
-As API routes dependem do Supabase e do Mercado Pago. Para testá-las sem fazer chamadas reais, usamos **mocks** — substituímos as dependências externas por versões simuladas.
-
-**O que instalar quando for fazer:**
-```bash
-npm install -D @testing-library/react @testing-library/jest-dom jsdom
-```
-
-**Arquivo de configuração do mock do Supabase:**
-```ts
-// app/api/__tests__/mocks/supabase.ts
-vi.mock('@/app/lib/supabase-server', () => ({
-  createSupabaseServiceClient: () => ({
-    from: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    in: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({ data: { id: 'uuid-fake' }, error: null }),
-  }),
-}))
-```
-
-**Exemplos de casos para `/api/checkout`:**
-```
-→ retorna 400 se dados do cliente estiverem faltando
-→ retorna 409 se estoque for insuficiente
-→ retorna 503 se MERCADO_PAGO_ACCESS_TOKEN não estiver configurado
-→ retorna order_id e init_point em caso de sucesso
-```
-
-**Exemplos de casos para `/api/webhooks/mercadopago`:**
-```
-→ retorna 200 (silencioso) se body for inválido
-→ ignora eventos que não sejam do tipo "payment"
-→ muda status do pedido para "paid" quando pagamento aprovado
-→ muda status para "cancelled" quando rejeitado
-→ retorna 401 se assinatura x-signature for inválida (a implementar)
-```
 
 ### Nível 4 — Componentes React
 
