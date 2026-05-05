@@ -1,9 +1,9 @@
 # Yez Store — Documentação Completa do Projeto
 
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
-> Última atualização: 2026-04-30 — TDD de componentes completo (163 testes); restauração de estoque via webhook implementada
+> Última atualização: 2026-05-04 — frete em dobro corrigido nos painéis admin; CI ganha `tsc --noEmit` e `npm run build`; webhook do MP loga falha em `increment_stock`.
 
-> 📋 **Revisão técnica completa disponível em [`REVISAO.md`](./REVISAO.md)** — diagnóstico de domínio, segurança, arquitetura, código e metodologia com roadmap de ação priorizado.
+> 📋 **Revisão técnica histórica disponível em [`REVISAO.md`](./REVISAO.md)** — congelada em 2026-04-28; o estado atual está aqui em `PROJETO.md`.
 
 ---
 
@@ -111,7 +111,7 @@
 | RF-04.7 | Ver detalhe do pedido | ✅ |
 | RF-04.8 | Atualizar status do pedido manualmente | ✅ |
 | RF-04.9 | Relatório de repasse financeiro por artesão | ❌ |
-| RF-04.10 | Restaurar estoque se pagamento falhar (webhook) | ❌ |
+| RF-04.10 | Restaurar estoque se pagamento falhar (webhook) | ✅ |
 | RF-04.11 | Feedback de erro inline nas ações do admin | ✅ |
 | RF-04.12 | Botão de reativar produto desativado | ✅ |
 
@@ -349,7 +349,6 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | Prioridade | Item |
 |---|---|
 | 🔴 Alta | Criar conta Mercado Pago + configurar token |
-| 🔴 Alta | Restaurar estoque se pagamento falhar (webhook `cancelled`) |
 | 🟡 Média | Email de confirmação ao cliente |
 | 🟡 Média | Relatório de repasse por artesão |
 | 🟡 Média | SEO (meta tags por página) |
@@ -367,7 +366,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 - [ ] Criar conta Mercado Pago e configurar `MERCADO_PAGO_ACCESS_TOKEN`
 - [x] ~~Verificar assinatura do webhook MP (`x-signature`)~~ — PR #10
 - [x] ~~Validar estoque no checkout (transação atômica)~~ — PR #11
-- [ ] Restaurar estoque quando pagamento falhar (webhook `cancelled`)
+- [x] ~~Restaurar estoque quando pagamento falhar (webhook `cancelled`)~~ — webhook + log de falha (PR #43)
 - [ ] Configurar webhook URL no painel MP apontando para produção
 
 ### Fase 2 — Operação
@@ -393,17 +392,20 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 
 ## 14. Dívida Técnica
 
-| Item | Impacto | Ação |
+| Item | Impacto | Issue / Ação |
 |---|---|---|
 | Tailwind instalado mas não usado | Baixo | Remover ou adotar |
 | Peso de frete estimado (300g/item) | Médio | Adicionar `weight_grams` em `products` |
 | Dimensões de embalagem hardcoded | Médio | Cadastrar por produto ou categoria |
-| `<img>` em vez de `next/image` | Baixo | Substituir para otimização |
-| `ShippingOption.price` é `string` | Baixo | Trocar por `number` e remover `parseFloat()` espalhado |
-| Carrinho não persiste ao recarregar | Médio | Zustand `persist` middleware |
-| ~~Sem restauração de estoque em falha~~ | ~~Alto~~ | ~~Webhook `cancelled` implementado — migration 004 pendente~~ |
+| `<img>` em vez de `next/image` | Baixo | [#18](https://github.com/serjjiin/YezStore/issues/18) |
+| `ShippingOption.price` é `string` | Baixo | [#20](https://github.com/serjjiin/YezStore/issues/20) — trocar por `number` |
+| Operações admin de escrita usam anon key no browser | Médio | [#37](https://github.com/serjjiin/YezStore/issues/37) — mover para Server Actions / Route Handlers |
+| Sem snapshot de `split_percentage` em `order_items` | Médio | [#38](https://github.com/serjjiin/YezStore/issues/38) — necessário antes do relatório de repasse |
+| CI sem cache de npm no `setup-node` | Baixo | [#41](https://github.com/serjjiin/YezStore/issues/41) |
+| Env vars fake no step de Build do CI | Baixo | [#42](https://github.com/serjjiin/YezStore/issues/42) — frágil se SSG depender de dados reais |
+| ~~Sem restauração de estoque em falha~~ | ~~Alto~~ | ~~Webhook `cancelled` + log de falha — PR #43~~ |
 | ~~API routes sem cobertura~~ | ~~Alto~~ | ~~163 testes com Vitest + TDD — PR #10/#11~~ |
-| `ShippingOption.price` é `string` | Baixo | Trocar por `number` e remover `parseFloat()` espalhado |
+| ~~Carrinho não persiste ao recarregar~~ | ~~Médio~~ | ~~Zustand `persist` middleware — já implementado em `app/lib/store.ts`~~ |
 
 ---
 
@@ -485,4 +487,9 @@ git checkout main && git pull  # após merge
 | #9 | Docs: remove seção obsoleta do PR #6 e corrige numeração | ✅ Merged |
 | #10 | TDD, testes de API (63 testes) e correções de segurança críticas (preço do banco, assinatura webhook, RLS com `is_admin()`, CI/CD) | ✅ Merged |
 | #11 | Validação e decremento atômico de estoque no checkout | ✅ Merged |
-| #12 | TDD de componentes React: CartLink, AddToCartButton, FreteCalculator, sacola/page, checkout/page (163 testes total) | 🔄 Branch atual |
+| #12 | Limpeza estrutural — remove boilerplate e unifica clientes Supabase | ✅ Merged |
+| #13 | TDD de componentes React: CartLink, AddToCartButton, FreteCalculator, sacola/page, checkout/page (163 testes total) | ✅ Merged |
+| #39 | Frete contado em dobro nos painéis admin — helper `orderTotals` + 4 telas + 6 testes | ✅ Merged |
+| #40 | Tipagem dos testes (cast duplo) + `tsc --noEmit` e `npm run build` no CI | ✅ Merged |
+| #43 | Log de falha de `increment_stock` no webhook do MP — payload selecionado, sem PII | ✅ Merged |
+| #44 | Sincroniza `PROJETO.md` e marca `REVISAO.md` como histórico | 🔄 Branch atual |
