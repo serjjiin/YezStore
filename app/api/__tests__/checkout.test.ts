@@ -156,7 +156,7 @@ describe('POST /api/checkout', () => {
 
       expect(body.error).not.toContain('MERCADO_PAGO_ACCESS_TOKEN')
       expect(body.error).toContain('Pagamento temporariamente indisponível')
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('MP_ACCESS_TOKEN'))
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('MERCADO_PAGO_ACCESS_TOKEN'))
       consoleSpy.mockRestore()
     })
   })

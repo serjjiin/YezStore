@@ -101,7 +101,7 @@ export async function POST(request: Request) {
   }
 
   if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
-    console.error('MP_ACCESS_TOKEN ausente — configure MERCADO_PAGO_ACCESS_TOKEN no .env.local')
+    console.error('MERCADO_PAGO_ACCESS_TOKEN ausente — configure no .env.local')
     return Response.json({
       error: 'Pagamento temporariamente indisponível. Tente novamente em instantes.',
     }, { status: 503 })
