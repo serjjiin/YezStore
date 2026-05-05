@@ -1,6 +1,7 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 import { formatCurrency } from '@/app/lib/format'
 import { STATUS_LABELS, STATUS_COLORS } from '@/app/admin/lib/status'
+import { getOrderTotal } from '@/app/admin/lib/orderTotals'
 import Link from 'next/link'
 
 export default async function AdminDashboard() {
@@ -28,7 +29,7 @@ export default async function AdminDashboard() {
 
   const paidOrders = typedOrders.filter((o) => o.status === 'paid' || o.status === 'shipped')
   const totalRevenue = paidOrders.reduce(
-    (sum: number, o: OrderRow) => sum + Number(o.total_amount) + Number(o.shipping_cost),
+    (sum: number, o: OrderRow) => sum + getOrderTotal(o),
     0
   )
   const lowStock = typedProducts.filter((p) => p.stock_quantity <= 2).length
@@ -127,7 +128,7 @@ export default async function AdminDashboard() {
                   {new Date(order.created_at).toLocaleDateString('pt-BR')}
                 </span>
                 <span>
-                  {formatCurrency(Number(order.total_amount) + Number(order.shipping_cost))}
+                  {formatCurrency(getOrderTotal(order))}
                 </span>
                 <span style={{
                   fontSize: 10, letterSpacing: 1, textTransform: 'uppercase',
