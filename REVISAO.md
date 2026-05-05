@@ -1,5 +1,9 @@
 # Revisão Técnica Completa — Yez Store
 
+> ⚠️ **Documento histórico — congelado em 2026-04-28.** Não atualizar.
+> Trechos sobre cobertura de testes, persistência do carrinho e roadmap imediato
+> podem estar desatualizados. O estado atual do projeto está em [`PROJETO.md`](./PROJETO.md).
+
 > Diagnóstico feito em 2026-04-27. Cobre domínio, requisitos, arquitetura, segurança,
 > qualidade de código, testes, documentação e metodologia.
 > **Atualizado em 2026-04-28** — status de implementação adicionado abaixo.
