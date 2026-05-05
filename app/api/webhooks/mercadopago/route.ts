@@ -107,10 +107,18 @@ export async function POST(request: Request) {
 
     if (orderItems?.length) {
       for (const item of orderItems) {
-        await supabase.rpc('increment_stock', {
+        const { error } = await supabase.rpc('increment_stock', {
           p_product_id: item.product_id,
           p_qty: item.quantity,
         })
+        if (error) {
+          console.error('Falha ao restaurar estoque', {
+            orderId: external_reference,
+            productId: item.product_id,
+            qty: item.quantity,
+            error: error.message,
+          })
+        }
       }
     }
   }
