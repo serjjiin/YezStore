@@ -1,7 +1,7 @@
 # Yez Store — Documentação Completa do Projeto
 
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
-> Última atualização: 2026-05-04 — frete em dobro corrigido nos painéis admin; CI ganha `tsc --noEmit` e `npm run build`; webhook do MP loga falha em `increment_stock`.
+> Última atualização: 2026-05-05 — 4 bugs cosméticos do admin corrigidos: memory leak em blob URL, filtros de pedidos derivados de `STATUS_LABELS`, `alt` de imagem e mensagem de erro genérica no checkout.
 
 > 📋 **Revisão técnica histórica disponível em [`REVISAO.md`](./REVISAO.md)** — congelada em 2026-04-28; o estado atual está aqui em `PROJETO.md`.
 
@@ -492,4 +492,5 @@ git checkout main && git pull  # após merge
 | #39 | Frete contado em dobro nos painéis admin — helper `orderTotals` + 4 telas + 6 testes | ✅ Merged |
 | #40 | Tipagem dos testes (cast duplo) + `tsc --noEmit` e `npm run build` no CI | ✅ Merged |
 | #43 | Log de falha de `increment_stock` no webhook do MP — payload selecionado, sem PII | ✅ Merged |
-| #44 | Sincroniza `PROJETO.md` e marca `REVISAO.md` como histórico | 🔄 Branch atual |
+| #44 | Sincroniza `PROJETO.md` e marca `REVISAO.md` como histórico | ✅ Merged |
+| #45 | 4 bugs admin: memory leak blob URL, filtros de `STATUS_LABELS`, `alt` de imagem, mensagem de erro genérica | ✅ Merged |
