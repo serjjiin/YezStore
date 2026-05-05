@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
@@ -53,6 +53,13 @@ export default function ProdutoForm({ artisans, initialData }: Props) {
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url ?? null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const blobUrlRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
+    }
+  }, [])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value, type } = e.target
@@ -66,8 +73,11 @@ export default function ProdutoForm({ artisans, initialData }: Props) {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
+    const url = URL.createObjectURL(file)
+    blobUrlRef.current = url
     setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+    setImagePreview(url)
   }
 
   async function handleSubmit(e: React.FormEvent) {

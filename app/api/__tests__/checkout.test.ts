@@ -145,6 +145,20 @@ describe('POST /api/checkout', () => {
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(503)
     })
+
+    it('retorna mensagem genérica sem expor nome da variável de ambiente', async () => {
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const res = await POST(makeRequest(validBody))
+      const body = await res.json()
+
+      expect(body.error).not.toContain('MERCADO_PAGO_ACCESS_TOKEN')
+      expect(body.error).toContain('Pagamento temporariamente indisponível')
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('MP_ACCESS_TOKEN'))
+      consoleSpy.mockRestore()
+    })
   })
 
   // ---------------------------------------------------------------------------
