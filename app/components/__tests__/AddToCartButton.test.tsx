@@ -15,7 +15,7 @@ describe('AddToCartButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useCartStore).mockImplementation(
-      (sel?: (s: { addItem: typeof addItem }) => unknown) => sel?.({ addItem }) ?? { addItem }
+      ((sel?: (s: { addItem: typeof addItem }) => unknown) => sel?.({ addItem }) ?? { addItem }) as unknown as typeof useCartStore
     )
   })
 

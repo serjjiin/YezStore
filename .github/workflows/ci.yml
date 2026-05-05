@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Lint e Testes
+    name: Lint, Testes, Tipos e Build
     runs-on: ubuntu-latest
 
     steps:
@@ -26,3 +26,13 @@ jobs:
 
       - name: Testes
         run: npm test
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-fake-key
+          SUPABASE_SERVICE_ROLE_KEY: service-fake-key
+        run: npm run build

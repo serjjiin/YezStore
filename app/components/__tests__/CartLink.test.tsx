@@ -16,7 +16,7 @@ type Item = { quantity: number }
 
 function mockCartItems(items: Item[]) {
   vi.mocked(useCartStore).mockImplementation(
-    (sel?: (s: { items: Item[] }) => unknown) => sel?.({ items }) ?? { items }
+    ((sel?: (s: { items: Item[] }) => unknown) => sel?.({ items }) ?? { items }) as unknown as typeof useCartStore
   )
 }
 
