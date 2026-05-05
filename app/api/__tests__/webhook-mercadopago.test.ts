@@ -299,5 +299,30 @@ describe('POST /api/webhooks/mercadopago', () => {
 
       expect(rpcSpy).not.toHaveBeenCalled()
     })
+
+    it('loga falha de increment_stock com payload selecionado e continua retornando 200', async () => {
+      const items: OrderItem[] = [{ product_id: 'prod-x', quantity: 2 }]
+      const { client, rpcSpy } = makeSupabaseChain(items)
+      rpcSpy.mockResolvedValueOnce({ data: null, error: { message: 'rpc failed' } })
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockMpFetch({ status: 'cancelled', external_reference: 'order-uuid', id: 42 })
+
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const res = await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
+
+      expect(res.status).toBe(200)
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Falha ao restaurar estoque',
+        expect.objectContaining({
+          orderId: 'order-uuid',
+          productId: 'prod-x',
+          qty: 2,
+          error: 'rpc failed',
+        })
+      )
+
+      errorSpy.mockRestore()
+    })
   })
 })
