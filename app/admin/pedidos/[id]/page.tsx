@@ -1,6 +1,7 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 import { formatCurrency } from '@/app/lib/format'
 import { STATUS_LABELS, STATUS_COLORS } from '@/app/admin/lib/status'
+import { getOrderTotal, getOrderProductsSubtotal } from '@/app/admin/lib/orderTotals'
 import { notFound } from 'next/navigation'
 import UpdateOrderStatus from './UpdateOrderStatus'
 import Link from 'next/link'
@@ -30,7 +31,6 @@ export default async function PedidoDetailPage({ params }: Props) {
   }
 
   const addr = order.shipping_address
-  const totalPago = Number(order.total_amount) + Number(order.shipping_cost)
 
   return (
     <div>
@@ -147,7 +147,7 @@ export default async function PedidoDetailPage({ params }: Props) {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--yez-gray)', marginBottom: 6 }}>
           <span>Produtos</span>
-          <span>{formatCurrency(Number(order.total_amount))}</span>
+          <span>{formatCurrency(getOrderProductsSubtotal(order))}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--yez-gray)', marginBottom: 12 }}>
           <span>Frete</span>
@@ -159,7 +159,7 @@ export default async function PedidoDetailPage({ params }: Props) {
           borderTop: '1.5px solid var(--yez-black)'
         }}>
           <span>Total</span>
-          <span>{formatCurrency(totalPago)}</span>
+          <span>{formatCurrency(getOrderTotal(order))}</span>
         </div>
         {order.mp_payment_id && (
           <div style={{ marginTop: 10, fontSize: 10, color: 'var(--yez-gray)', letterSpacing: .5 }}>

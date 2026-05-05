@@ -1,6 +1,7 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 import { formatCurrency } from '@/app/lib/format'
 import { STATUS_LABELS, STATUS_COLORS } from '@/app/admin/lib/status'
+import { getOrderTotal } from '@/app/admin/lib/orderTotals'
 import Link from 'next/link'
 
 export default async function AdminPedidosPage({
@@ -111,7 +112,7 @@ export default async function AdminPedidosPage({
                   {new Date(order.created_at).toLocaleDateString('pt-BR')}
                 </span>
                 <span>
-                  {formatCurrency(Number(order.total_amount) + Number(order.shipping_cost))}
+                  {formatCurrency(getOrderTotal(order))}
                 </span>
                 <span style={{
                   fontSize: 10, letterSpacing: 1, textTransform: 'uppercase',
