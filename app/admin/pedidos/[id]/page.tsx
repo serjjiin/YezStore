@@ -117,7 +117,7 @@ export default async function PedidoDetailPage({ params }: Props) {
           }}>
             <div style={{ width: 52, height: 52, background: 'var(--yez-cream)', flexShrink: 0, overflow: 'hidden' }}>
               {item.products?.image_url && (
-                <img src={item.products.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={item.products.image_url} alt={item.products.title ?? 'Produto removido'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               )}
             </div>
             <div style={{ flex: 1 }}>

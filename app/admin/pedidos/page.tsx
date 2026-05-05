@@ -39,8 +39,10 @@ export default async function AdminPedidosPage({
 
   const orders = (rawOrders ?? []) as OrderRow[]
 
-  const filters = ['', 'pending', 'paid', 'shipped', 'cancelled']
-  const filterLabels = ['Todos', 'Pendente', 'Pago', 'Enviado', 'Cancelado']
+  const filterOptions = [
+    { value: '', label: 'Todos' },
+    ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
+  ]
 
   return (
     <div>
@@ -55,12 +57,12 @@ export default async function AdminPedidosPage({
 
       {/* Filtros de status */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        {filters.map((f, i) => {
-          const isActive = (status ?? '') === f
+        {filterOptions.map(({ value, label }) => {
+          const isActive = (status ?? '') === value
           return (
             <Link
-              key={f}
-              href={f ? `/admin/pedidos?status=${f}` : '/admin/pedidos'}
+              key={value}
+              href={value ? `/admin/pedidos?status=${value}` : '/admin/pedidos'}
               style={{
                 padding: '7px 14px', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase',
                 textDecoration: 'none',
@@ -69,7 +71,7 @@ export default async function AdminPedidosPage({
                 border: '1px solid var(--yez-lightgray)',
               }}
             >
-              {filterLabels[i]}
+              {label}
             </Link>
           )
         })}
