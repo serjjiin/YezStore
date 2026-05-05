@@ -115,7 +115,7 @@ describe('POST /api/checkout', () => {
   describe('erro no banco', () => {
     it('retorna 500 se o Supabase falhar ao criar o pedido', async () => {
       const { client } = makeSmartChain({ orderResult: { data: null, error: { message: 'DB error' } } })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(500)
@@ -124,7 +124,7 @@ describe('POST /api/checkout', () => {
     it('retorna 500 se a inserção de order_items falhar — não continua para o MP', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client } = makeSmartChain({ itemsInsertError: { message: 'Items DB error' } })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(500)
@@ -140,7 +140,7 @@ describe('POST /api/checkout', () => {
   describe('sem Mercado Pago configurado', () => {
     it('retorna 503 quando MERCADO_PAGO_ACCESS_TOKEN está ausente', async () => {
       const { client } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(503)
@@ -155,7 +155,7 @@ describe('POST /api/checkout', () => {
     it('retorna order_id, init_point e sandbox_init_point', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({
         id: 'pref-id',
         init_point: 'https://mp.com/pay',
@@ -173,7 +173,7 @@ describe('POST /api/checkout', () => {
     it('cria os itens do pedido no banco com os dados corretos', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client, itemsInsertSpy } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       await POST(makeRequest(validBody))
@@ -194,7 +194,7 @@ describe('POST /api/checkout', () => {
       const { client, itemsInsertSpy } = makeSmartChain({
         products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 5 }],
       })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       // Cliente envia preço manipulado: R$ 0,01 em vez de R$ 50,00
@@ -213,7 +213,7 @@ describe('POST /api/checkout', () => {
 
     it('retorna 400 se algum produto não existir no banco', async () => {
       const { client } = makeSmartChain({ products: [] })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(400)
@@ -223,7 +223,7 @@ describe('POST /api/checkout', () => {
       const { client } = makeSmartChain({
         products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: false, stock_quantity: 5 }],
       })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(400)
@@ -240,7 +240,7 @@ describe('POST /api/checkout', () => {
       const { client } = makeSmartChain({
         products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 1 }],
       })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(409)
@@ -252,7 +252,7 @@ describe('POST /api/checkout', () => {
       const { client } = makeSmartChain({
         products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 0 }],
       })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
       const res = await POST(makeRequest(validBody))
       expect(res.status).toBe(409)
@@ -263,7 +263,7 @@ describe('POST /api/checkout', () => {
       const { client, productsUpdateSpy } = makeSmartChain({
         products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 5 }],
       })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       await POST(makeRequest(validBody)) // quantity=2
@@ -279,7 +279,7 @@ describe('POST /api/checkout', () => {
         products: [{ id: 'prod-1', title: 'Sousplat', price: 50, is_active: true, stock_quantity: 1 }],
         stockDecrementResult: [], // simula corrida: 0 linhas atualizadas
       })
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       const bodyCorrida = {
@@ -307,7 +307,7 @@ describe('POST /api/checkout', () => {
     it('cria preferência com items, payer, back_urls, external_reference e statement_descriptor corretos', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: 'https://mp.com/pay', sandbox_init_point: '' })
 
       await POST(makeRequest(validBody))
@@ -332,7 +332,7 @@ describe('POST /api/checkout', () => {
     it('adiciona frete como item separado quando shippingCost > 0', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       await POST(makeRequest(validBody)) // shipping.price = '18.50'
@@ -345,7 +345,7 @@ describe('POST /api/checkout', () => {
     it('não adiciona item de frete quando shipping é nulo', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       const bodyWithoutShipping = { ...validBody, shipping: null }
@@ -360,7 +360,7 @@ describe('POST /api/checkout', () => {
     it('salva mp_preference_id no pedido após criar preferência', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client, updateSpy } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-xyz', init_point: '', sandbox_init_point: '' })
 
       await POST(makeRequest(validBody))
@@ -378,7 +378,7 @@ describe('POST /api/checkout', () => {
       // NEXT_PUBLIC_BASE_URL não definido → baseUrl = 'http://localhost:3000' → isLocalhost = true
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client } = makeSmartChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       await POST(makeRequest(validBody))
@@ -396,7 +396,7 @@ describe('POST /api/checkout', () => {
       const { POST: POSTfresh } = await import('../checkout/route')
       const { createSupabaseServiceClient: freshCSC } = await import('@/app/lib/supabase-server')
       const { client } = makeSmartChain()
-      vi.mocked(freshCSC).mockReturnValue(client as ReturnType<typeof createSupabaseServiceClient>)
+      vi.mocked(freshCSC).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
 
       await POSTfresh(makeRequest(validBody))

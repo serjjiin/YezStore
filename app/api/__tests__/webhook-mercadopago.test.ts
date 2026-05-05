@@ -147,7 +147,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('processa normalmente com x-signature válido', async () => {
       const { client, updateSpy } = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'approved', external_reference: 'order-uuid', id: 42 })
 
       const { xSignature, xRequestId } = computeMpSignature('42', 'req-1', '1700000000', WEBHOOK_SECRET)
@@ -165,7 +165,7 @@ describe('POST /api/webhooks/mercadopago', () => {
     it('pula verificação se MERCADO_PAGO_WEBHOOK_SECRET não estiver configurado', async () => {
       delete process.env.MERCADO_PAGO_WEBHOOK_SECRET
       const { client } = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'approved', external_reference: 'order-uuid', id: 42 })
 
       // Sem secret configurado, requisição sem x-signature deve passar
@@ -185,7 +185,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('atualiza pedido para paid quando pagamento for aprovado', async () => {
       const { client, updateSpy } = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'approved', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -195,7 +195,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('atualiza pedido para cancelled quando pagamento for rejeitado', async () => {
       const { client, updateSpy } = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'rejected', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -205,7 +205,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('mantém pedido como pending quando pagamento estiver em processo', async () => {
       const { client, updateSpy } = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'in_process', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -215,7 +215,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('não atualiza o pedido se external_reference estiver ausente', async () => {
       const { client, updateSpy } = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'approved', external_reference: null, id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -225,7 +225,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('filtra pagamento cancelado pelo MP', async () => {
       const { client, updateSpy } = makeSupabaseChain()
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'cancelled', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -249,7 +249,7 @@ describe('POST /api/webhooks/mercadopago', () => {
         { product_id: 'prod-b', quantity: 1 },
       ]
       const { client, rpcSpy } = makeSupabaseChain(items)
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'rejected', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -262,7 +262,7 @@ describe('POST /api/webhooks/mercadopago', () => {
     it('chama increment_stock quando pagamento for cancelado', async () => {
       const items: OrderItem[] = [{ product_id: 'prod-a', quantity: 3 }]
       const { client, rpcSpy } = makeSupabaseChain(items)
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'cancelled', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -272,7 +272,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('não chama increment_stock quando pagamento for aprovado', async () => {
       const { client, rpcSpy } = makeSupabaseChain([{ product_id: 'prod-a', quantity: 1 }])
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'approved', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -282,7 +282,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('não chama increment_stock quando pagamento estiver pendente', async () => {
       const { client, rpcSpy } = makeSupabaseChain([{ product_id: 'prod-a', quantity: 1 }])
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'pending', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))
@@ -292,7 +292,7 @@ describe('POST /api/webhooks/mercadopago', () => {
 
     it('não chama increment_stock se não houver itens no pedido', async () => {
       const { client, rpcSpy } = makeSupabaseChain([]) // sem itens
-      vi.mocked(createSupabaseServiceClient).mockReturnValue(client)
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
       mockMpFetch({ status: 'cancelled', external_reference: 'order-uuid', id: 42 })
 
       await POST(makeRequest({ type: 'payment', data: { id: '42' } }))

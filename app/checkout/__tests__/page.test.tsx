@@ -221,7 +221,7 @@ describe('CheckoutPage', () => {
   })
 
   it('exibe "Processando..." e desabilita botão durante o envio', async () => {
-    let resolveCheckout!: (v: unknown) => void
+    let resolveCheckout!: () => void
     stubFetch({ viacepData: { logradouro: 'Rua A', bairro: 'Centro', localidade: 'Brasília', uf: 'DF' } })
     vi.mocked(fetch).mockImplementationOnce(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve({ logradouro: 'Rua A', bairro: 'Centro', localidade: 'Brasília', uf: 'DF' }) } as Response)
@@ -248,7 +248,7 @@ describe('CheckoutPage', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2)) // viacep + checkout
 
     const checkoutCall = (fetch as ReturnType<typeof vi.fn>).mock.calls.find(
-      ([url]: [string]) => url === '/api/checkout'
+      (call) => call[0] === '/api/checkout'
     )
     expect(checkoutCall).toBeDefined()
     const body = JSON.parse((checkoutCall![1] as RequestInit).body as string)
