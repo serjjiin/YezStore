@@ -422,5 +422,28 @@ describe('POST /api/checkout', () => {
       delete process.env.NEXT_PUBLIC_BASE_URL
       vi.resetModules()
     })
+
+    it('em Vercel preview: usa VERCEL_URL como fallback quando NEXT_PUBLIC_BASE_URL não está definido', async () => {
+      process.env.VERCEL_URL = 'yez-store-git-feat-test.vercel.app'
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      vi.resetModules()
+
+      const { POST: POSTfresh } = await import('../checkout/route')
+      const { createSupabaseServiceClient: freshCSC } = await import('@/app/lib/supabase-server')
+      const { client } = makeSmartChain()
+      vi.mocked(freshCSC).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      await POSTfresh(makeRequest(validBody))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      // Deve usar https:// + VERCEL_URL
+      expect(prefArg.body.back_urls.success).toContain('https://yez-store-git-feat-test.vercel.app/checkout/sucesso')
+      expect(prefArg.body.notification_url).toBe('https://yez-store-git-feat-test.vercel.app/api/webhooks/mercadopago')
+      expect(prefArg.body.auto_return).toBe('approved')
+
+      delete process.env.VERCEL_URL
+      vi.resetModules()
+    })
   })
 })

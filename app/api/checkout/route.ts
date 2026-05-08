@@ -1,7 +1,9 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+  ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
+  ?? 'http://localhost:3000'
 
 type RequestItem = { id: string; quantity: number }
 type DbProduct = { id: string; title: string; price: number; is_active: boolean; stock_quantity: number | null }
