@@ -73,7 +73,7 @@ function makeRequest(body: object) {
 }
 
 const validBody = {
-  customer: { name: 'Ana', email: 'ana@test.com', phone: '11999999999' },
+  customer: { name: 'Ana', email: 'ana@test.com', phone: '11999999999', cpf: '52998224725' },
   items: [{ id: 'prod-1', title: 'Sousplat', price: 50, quantity: 2 }],
   shipping: { id: 1, name: 'PAC', price: '18.50', delivery_time: 7, company: { name: 'Correios' } },
   shippingAddress: { cep: '73086130', rua: 'Rua Teste', numero: '1' },
@@ -104,6 +104,14 @@ describe('POST /api/checkout', () => {
 
     it('retorna 400 se items estiver vazio', async () => {
       const res = await POST(makeRequest({ ...validBody, items: [] }))
+      expect(res.status).toBe(400)
+    })
+
+    it('retorna 400 se customer.cpf estiver ausente', async () => {
+      const res = await POST(makeRequest({
+        ...validBody,
+        customer: { name: 'Ana', email: 'a@b.com', phone: '11999999999' },
+      }))
       expect(res.status).toBe(400)
     })
   })
@@ -351,7 +359,12 @@ describe('POST /api/checkout', () => {
         unit_price: 50,
         currency_id: 'BRL',
       })
-      expect(prefArg.body.payer).toEqual({ name: 'Ana', email: 'ana@test.com' })
+      expect(prefArg.body.payer).toEqual({
+        name: 'Ana',
+        email: 'ana@test.com',
+        phone: { area_code: '11', number: '999999999' },
+        identification: { type: 'CPF', number: '52998224725' },
+      })
       expect(prefArg.body.back_urls).toMatchObject({
         success: expect.stringContaining('/checkout/sucesso'),
         failure: expect.stringContaining('/checkout/falha'),

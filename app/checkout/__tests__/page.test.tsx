@@ -19,6 +19,7 @@ vi.mock('next/link', () => ({
 vi.mock('@/app/lib/format', () => ({
   formatCurrency: (v: number) => `R$ ${v.toFixed(2)}`,
   formatCep: (v: string) => v.replace(/\D/g, '').slice(0, 8),
+  formatCpf: (v: string) => v.replace(/\D/g, '').slice(0, 11),
 }))
 
 const clearCart = vi.fn()
@@ -65,6 +66,7 @@ function stubFetch({
 async function fillForm(skipCep = false) {
   await userEvent.type(screen.getByPlaceholderText('Maria da Silva'), 'Maria Silva')
   await userEvent.type(screen.getByPlaceholderText('maria@email.com'), 'maria@email.com')
+  await userEvent.type(screen.getByPlaceholderText('000.000.000-00'), '52998224725')
   if (!skipCep) {
     await userEvent.type(screen.getByPlaceholderText('70000-000'), '12345678')
     await waitFor(() =>
@@ -256,6 +258,7 @@ describe('CheckoutPage', () => {
     const body = JSON.parse((checkoutCall![1] as RequestInit).body as string)
     expect(body.customer.name).toBe('Maria Silva')
     expect(body.customer.email).toBe('maria@email.com')
+    expect(body.customer.cpf).toBe('52998224725')
     expect(body.items[0].id).toBe('p1')
   })
 

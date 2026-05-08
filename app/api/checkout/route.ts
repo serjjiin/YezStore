@@ -14,9 +14,14 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { customer, items, shipping, shippingAddress } = body
 
-  if (!customer?.name || !customer?.email || !items?.length) {
+  if (!customer?.name || !customer?.email || !customer?.cpf || !items?.length) {
     return Response.json({ error: 'Dados incompletos.' }, { status: 400 })
   }
+
+  const cpf = (customer.cpf as string).replace(/\D/g, '')
+  const phoneDigits = (customer.phone ?? '').replace(/\D/g, '')
+  const areaCode = phoneDigits.slice(0, 2)
+  const phoneNumber = phoneDigits.slice(2)
 
   const supabase = createSupabaseServiceClient()
 
@@ -141,6 +146,8 @@ export async function POST(request: Request) {
     payer: {
       name: customer.name,
       email: customer.email,
+      ...(areaCode && phoneNumber ? { phone: { area_code: areaCode, number: phoneNumber } } : {}),
+      identification: { type: 'CPF', number: cpf },
     },
     back_urls: {
       success: `${baseUrl}/checkout/sucesso`,

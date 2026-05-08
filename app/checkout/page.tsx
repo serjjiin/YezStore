@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useCartStore } from '@/app/lib/store'
-import { formatCurrency, formatCep } from '@/app/lib/format'
+import { formatCurrency, formatCep, formatCpf } from '@/app/lib/format'
 import Link from 'next/link'
 
 const inputStyle: React.CSSProperties = {
@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     name: '',
     email: '',
+    cpf: '',
     phone: '',
     cep: '',
     street: '',
@@ -79,7 +80,7 @@ export default function CheckoutPage() {
     e.preventDefault()
     setError('')
 
-    if (!form.name || !form.email || !form.cep || !form.street || !form.number) {
+    if (!form.name || !form.email || !form.cpf || !form.cep || !form.street || !form.number) {
       setError('Preencha todos os campos obrigatórios.')
       return
     }
@@ -99,6 +100,7 @@ export default function CheckoutPage() {
           customer: {
             name: form.name,
             email: form.email,
+            cpf: form.cpf,
             phone: form.phone,
           },
           items: items.map((i) => ({
@@ -209,6 +211,21 @@ export default function CheckoutPage() {
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>E-mail *</label>
             <input name="email" type="email" value={form.email} onChange={handleChange} style={inputStyle} placeholder="maria@email.com" required />
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>CPF *</label>
+            <input
+              name="cpf"
+              value={form.cpf}
+              inputMode="numeric"
+              onChange={(e) => {
+                const masked = formatCpf(e.target.value)
+                setForm(prev => ({ ...prev, cpf: masked }))
+              }}
+              style={inputStyle}
+              placeholder="000.000.000-00"
+              required
+            />
           </div>
           <div style={{ marginBottom: 24 }}>
             <label style={labelStyle}>WhatsApp</label>
