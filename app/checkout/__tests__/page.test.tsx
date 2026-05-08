@@ -202,13 +202,29 @@ describe('CheckoutPage', () => {
     await waitFor(() => expect(window.location.href).toBe('https://mp.com/pay'))
   })
 
-  it('usa sandbox_init_point quando presente na resposta', async () => {
+  it('usa sandbox_init_point como fallback quando init_point ausente', async () => {
     stubFetch({ checkoutData: { sandbox_init_point: 'https://sandbox.mp.com/pay' } })
     mockStore()
     render(<CheckoutPage />)
     await fillForm()
     await userEvent.click(screen.getByRole('button', { name: 'Ir para o pagamento →' }))
     await waitFor(() => expect(window.location.href).toBe('https://sandbox.mp.com/pay'))
+  })
+
+  it('prioriza init_point sobre sandbox_init_point quando ambos presentes', async () => {
+    stubFetch({
+      checkoutData: {
+        init_point: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=xxx',
+        sandbox_init_point: 'https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=xxx',
+      },
+    })
+    mockStore()
+    render(<CheckoutPage />)
+    await fillForm()
+    await userEvent.click(screen.getByRole('button', { name: 'Ir para o pagamento →' }))
+    await waitFor(() =>
+      expect(window.location.href).toContain('www.mercadopago.com.br')
+    )
   })
 
   it('limpa o carrinho após submissão bem-sucedida', async () => {

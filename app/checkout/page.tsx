@@ -129,8 +129,9 @@ export default function CheckoutPage() {
 
       clearCart()
 
-      // Em sandbox usa sandbox_init_point, em produção usa init_point
-      const redirectUrl = data.sandbox_init_point ?? data.init_point
+      // init_point funciona com ambos os tokens (TEST- e APP_USR-).
+      // O MP roteia automaticamente para sandbox ou produção conforme o token.
+      const redirectUrl = data.init_point ?? data.sandbox_init_point
       window.location.href = redirectUrl
     } catch {
       setError('Erro de conexão. Tente novamente.')
