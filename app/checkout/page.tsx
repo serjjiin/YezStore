@@ -69,7 +69,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const isTestMode = !process.env.NEXT_PUBLIC_MP_PUBLIC_KEY
+  const isTestMode = process.env.NEXT_PUBLIC_MERCADO_PAGO_SANDBOX === 'true'
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -129,10 +129,7 @@ export default function CheckoutPage() {
 
       clearCart()
 
-      // init_point funciona com ambos os tokens (TEST- e APP_USR-).
-      // O MP roteia automaticamente para sandbox ou produção conforme o token.
-      const redirectUrl = data.init_point ?? data.sandbox_init_point
-      window.location.href = redirectUrl
+      window.location.href = data.redirect_url
     } catch {
       setError('Erro de conexão. Tente novamente.')
     } finally {

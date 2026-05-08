@@ -43,7 +43,7 @@ function mockStore(items: CartItem[] = [item], selectedShipping: ShippingOption 
 
 function stubFetch({
   viacepData = { logradouro: 'Rua A', bairro: 'Centro', localidade: 'Brasília', uf: 'DF' },
-  checkoutData = { init_point: 'https://mp.com/pay' },
+  checkoutData = { redirect_url: 'https://mp.com/pay' },
   checkoutOk = true,
 }: {
   viacepData?: object
@@ -193,8 +193,8 @@ describe('CheckoutPage', () => {
   // Submissão bem-sucedida
   // ---------------------------------------------------------------------------
 
-  it('redireciona para init_point após submissão bem-sucedida', async () => {
-    stubFetch({ checkoutData: { init_point: 'https://mp.com/pay' } })
+  it('redireciona para redirect_url após submissão bem-sucedida', async () => {
+    stubFetch({ checkoutData: { redirect_url: 'https://mp.com/pay' } })
     mockStore()
     render(<CheckoutPage />)
     await fillForm()
@@ -202,28 +202,14 @@ describe('CheckoutPage', () => {
     await waitFor(() => expect(window.location.href).toBe('https://mp.com/pay'))
   })
 
-  it('usa sandbox_init_point como fallback quando init_point ausente', async () => {
-    stubFetch({ checkoutData: { sandbox_init_point: 'https://sandbox.mp.com/pay' } })
-    mockStore()
-    render(<CheckoutPage />)
-    await fillForm()
-    await userEvent.click(screen.getByRole('button', { name: 'Ir para o pagamento →' }))
-    await waitFor(() => expect(window.location.href).toBe('https://sandbox.mp.com/pay'))
-  })
-
-  it('prioriza init_point sobre sandbox_init_point quando ambos presentes', async () => {
-    stubFetch({
-      checkoutData: {
-        init_point: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=xxx',
-        sandbox_init_point: 'https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=xxx',
-      },
-    })
+  it('redireciona para sandbox quando o backend retorna URL de sandbox', async () => {
+    stubFetch({ checkoutData: { redirect_url: 'https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=yyy' } })
     mockStore()
     render(<CheckoutPage />)
     await fillForm()
     await userEvent.click(screen.getByRole('button', { name: 'Ir para o pagamento →' }))
     await waitFor(() =>
-      expect(window.location.href).toContain('www.mercadopago.com.br')
+      expect(window.location.href).toContain('sandbox.mercadopago.com.br')
     )
   })
 
@@ -243,7 +229,7 @@ describe('CheckoutPage', () => {
       Promise.resolve({ ok: true, json: () => Promise.resolve({ logradouro: 'Rua A', bairro: 'Centro', localidade: 'Brasília', uf: 'DF' }) } as Response)
     ).mockImplementationOnce(() =>
       new Promise((res) => {
-        resolveCheckout = () => res({ ok: true, json: () => Promise.resolve({ init_point: 'https://mp.com/pay' }) } as Response)
+        resolveCheckout = () => res({ ok: true, json: () => Promise.resolve({ redirect_url: 'https://mp.com/pay' }) } as Response)
       })
     )
     mockStore()

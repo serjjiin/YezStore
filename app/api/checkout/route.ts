@@ -160,9 +160,13 @@ export async function POST(request: Request) {
     .update({ mp_preference_id: prefResponse.id })
     .eq('id', order.id)
 
+  const isSandbox = process.env.MERCADO_PAGO_SANDBOX === 'true'
+  const redirectUrl = isSandbox
+    ? (prefResponse.sandbox_init_point ?? prefResponse.init_point)
+    : (prefResponse.init_point ?? prefResponse.sandbox_init_point)
+
   return Response.json({
     order_id: order.id,
-    init_point: prefResponse.init_point,
-    sandbox_init_point: prefResponse.sandbox_init_point,
+    redirect_url: redirectUrl,
   })
 }

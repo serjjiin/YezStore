@@ -166,7 +166,7 @@ describe('POST /api/checkout', () => {
   // ---------------------------------------------------------------------------
 
   describe('sucesso', () => {
-    it('retorna order_id, init_point e sandbox_init_point', async () => {
+    it('retorna order_id e redirect_url (produção por padrão)', async () => {
       process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
       const { client } = makeSmartChain()
       vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
@@ -180,8 +180,26 @@ describe('POST /api/checkout', () => {
       expect(res.status).toBe(200)
       const json = await res.json()
       expect(json.order_id).toBe('order-uuid')
-      expect(json.init_point).toBe('https://mp.com/pay')
-      expect(json.sandbox_init_point).toBe('https://sandbox.mp.com/pay')
+      expect(json.redirect_url).toBe('https://mp.com/pay')
+    })
+
+    it('usa sandbox_init_point como redirect_url quando MERCADO_PAGO_SANDBOX=true', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      process.env.MERCADO_PAGO_SANDBOX = 'true'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({
+        id: 'pref-id',
+        init_point: 'https://mp.com/pay',
+        sandbox_init_point: 'https://sandbox.mp.com/pay',
+      })
+
+      const res = await POST(makeRequest(validBody))
+      expect(res.status).toBe(200)
+      const json = await res.json()
+      expect(json.redirect_url).toBe('https://sandbox.mp.com/pay')
+
+      delete process.env.MERCADO_PAGO_SANDBOX
     })
 
     it('cria os itens do pedido no banco com os dados corretos', async () => {
