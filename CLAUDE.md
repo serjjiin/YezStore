@@ -66,9 +66,15 @@ Há três helpers em `app/lib/supabase-server.ts` e `app/lib/supabase-browser.ts
 - `createSupabaseServerClient()` — Server Components e Route Handlers (usa cookies)
 - `createSupabaseServiceClient()` — **bypass de RLS**; usar apenas em Route Handlers server-side para operações admin (ex: criar pedidos, atualizar status via webhook)
 
-### Proteção de rotas admin
+### Proteção de rotas admin + preview
 
-`proxy.ts` funciona como middleware Next.js — intercepta `/admin/*`, verifica sessão Supabase e redireciona para `/admin/login` se não autenticado. O matcher está definido no próprio `proxy.ts` (não em `middleware.ts`).
+`middleware.ts` funciona como middleware Next.js com 3 camadas de proteção:
+
+1. **Webhook passthrough** — `/api/webhooks/mercadopago` sempre passa (MP precisa chamar sem autenticação)
+2. **Preview protection** — em `VERCEL_ENV=preview`, exige senha (`NEXT_PUBLIC_YEZ_PREVIEW_SECRET`) para acessar qualquer página. Visitantes são redirecionados para `/preview-login`
+3. **Admin protection** — rotas `/admin/*` verificam sessão Supabase; redireciona para `/admin/login` se não autenticado
+
+O matcher está definido no próprio `middleware.ts`.
 
 ### Fluxo de pedido
 
@@ -110,4 +116,5 @@ MELHOR_ENVIO_TOKEN=
 MELHOR_ENVIO_URL=                # https://melhorenvio.com.br (produção)
 MELHOR_ENVIO_CEP_ORIGEM=         # 73086130 (sede da Yez)
 NEXT_PUBLIC_BASE_URL=            # base para back_urls do MP e webhook
+NEXT_PUBLIC_YEZ_PREVIEW_SECRET=  # senha compartilhada para acessar previews Vercel
 ```

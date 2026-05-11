@@ -19,6 +19,7 @@ vi.mock('next/link', () => ({
 vi.mock('@/app/lib/format', () => ({
   formatCurrency: (v: number) => `R$ ${v.toFixed(2)}`,
   formatCep: (v: string) => v.replace(/\D/g, '').slice(0, 8),
+  formatCpf: (v: string) => v.replace(/\D/g, '').slice(0, 11),
 }))
 
 const clearCart = vi.fn()
@@ -43,7 +44,7 @@ function mockStore(items: CartItem[] = [item], selectedShipping: ShippingOption 
 
 function stubFetch({
   viacepData = { logradouro: 'Rua A', bairro: 'Centro', localidade: 'Brasília', uf: 'DF' },
-  checkoutData = { init_point: 'https://mp.com/pay' },
+  checkoutData = { redirect_url: 'https://mp.com/pay' },
   checkoutOk = true,
 }: {
   viacepData?: object
@@ -65,6 +66,7 @@ function stubFetch({
 async function fillForm(skipCep = false) {
   await userEvent.type(screen.getByPlaceholderText('Maria da Silva'), 'Maria Silva')
   await userEvent.type(screen.getByPlaceholderText('maria@email.com'), 'maria@email.com')
+  await userEvent.type(screen.getByPlaceholderText('000.000.000-00'), '52998224725')
   if (!skipCep) {
     await userEvent.type(screen.getByPlaceholderText('70000-000'), '12345678')
     await waitFor(() =>
@@ -193,8 +195,8 @@ describe('CheckoutPage', () => {
   // Submissão bem-sucedida
   // ---------------------------------------------------------------------------
 
-  it('redireciona para init_point após submissão bem-sucedida', async () => {
-    stubFetch({ checkoutData: { init_point: 'https://mp.com/pay' } })
+  it('redireciona para redirect_url após submissão bem-sucedida', async () => {
+    stubFetch({ checkoutData: { redirect_url: 'https://mp.com/pay' } })
     mockStore()
     render(<CheckoutPage />)
     await fillForm()
@@ -202,13 +204,15 @@ describe('CheckoutPage', () => {
     await waitFor(() => expect(window.location.href).toBe('https://mp.com/pay'))
   })
 
-  it('usa sandbox_init_point quando presente na resposta', async () => {
-    stubFetch({ checkoutData: { sandbox_init_point: 'https://sandbox.mp.com/pay' } })
+  it('redireciona para sandbox quando o backend retorna URL de sandbox', async () => {
+    stubFetch({ checkoutData: { redirect_url: 'https://sandbox.mercadopago.com.br/checkout/v1/redirect?pref_id=yyy' } })
     mockStore()
     render(<CheckoutPage />)
     await fillForm()
     await userEvent.click(screen.getByRole('button', { name: 'Ir para o pagamento →' }))
-    await waitFor(() => expect(window.location.href).toBe('https://sandbox.mp.com/pay'))
+    await waitFor(() =>
+      expect(window.location.href).toContain('sandbox.mercadopago.com.br')
+    )
   })
 
   it('limpa o carrinho após submissão bem-sucedida', async () => {
@@ -227,7 +231,7 @@ describe('CheckoutPage', () => {
       Promise.resolve({ ok: true, json: () => Promise.resolve({ logradouro: 'Rua A', bairro: 'Centro', localidade: 'Brasília', uf: 'DF' }) } as Response)
     ).mockImplementationOnce(() =>
       new Promise((res) => {
-        resolveCheckout = () => res({ ok: true, json: () => Promise.resolve({ init_point: 'https://mp.com/pay' }) } as Response)
+        resolveCheckout = () => res({ ok: true, json: () => Promise.resolve({ redirect_url: 'https://mp.com/pay' }) } as Response)
       })
     )
     mockStore()
@@ -254,6 +258,7 @@ describe('CheckoutPage', () => {
     const body = JSON.parse((checkoutCall![1] as RequestInit).body as string)
     expect(body.customer.name).toBe('Maria Silva')
     expect(body.customer.email).toBe('maria@email.com')
+    expect(body.customer.cpf).toBe('52998224725')
     expect(body.items[0].id).toBe('p1')
   })
 

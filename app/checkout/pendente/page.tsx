@@ -10,6 +10,7 @@ import CheckoutNav from '@/app/checkout/CheckoutNav'
 function PendenteContent() {
   const { clearCart } = useCartStore()
   const searchParams = useSearchParams()
+  const paymentId = searchParams.get('payment_id')
   const externalRef = searchParams.get('external_reference')
 
   useEffect(() => {
@@ -38,7 +39,7 @@ function PendenteContent() {
 
       {externalRef && (
         <div style={{
-          background: 'var(--yez-cream)', padding: '12px 16px', marginBottom: 28,
+          background: 'var(--yez-cream)', padding: '12px 16px', marginBottom: 12,
           fontSize: 11, letterSpacing: .5, color: 'var(--yez-gray)'
         }}>
           <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>
@@ -46,6 +47,20 @@ function PendenteContent() {
           </div>
           <div style={{ fontWeight: 600, color: 'var(--yez-black)', wordBreak: 'break-all' }}>
             {externalRef}
+          </div>
+        </div>
+      )}
+
+      {paymentId && (
+        <div style={{
+          background: 'var(--yez-cream)', padding: '12px 16px', marginBottom: 28,
+          fontSize: 11, letterSpacing: .5, color: 'var(--yez-gray)'
+        }}>
+          <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>
+            ID do pagamento
+          </div>
+          <div style={{ fontWeight: 600, color: 'var(--yez-black)' }}>
+            {paymentId}
           </div>
         </div>
       )}

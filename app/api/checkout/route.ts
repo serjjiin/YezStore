@@ -1,7 +1,11 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+// VERCEL_URL tem precedência sobre NEXT_PUBLIC_BASE_URL porque a Vercel
+// sempre sabe a URL correta do deployment (produção ou preview).
+const baseUrl = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : (process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000')
 
 type RequestItem = { id: string; quantity: number }
 type DbProduct = { id: string; title: string; price: number; is_active: boolean; stock_quantity: number | null }
@@ -10,9 +14,14 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { customer, items, shipping, shippingAddress } = body
 
-  if (!customer?.name || !customer?.email || !items?.length) {
+  if (!customer?.name || !customer?.email || !customer?.cpf || !items?.length) {
     return Response.json({ error: 'Dados incompletos.' }, { status: 400 })
   }
+
+  const cpf = (customer.cpf as string).replace(/\D/g, '')
+  const phoneDigits = (customer.phone ?? '').replace(/\D/g, '')
+  const areaCode = phoneDigits.slice(0, 2)
+  const phoneNumber = phoneDigits.slice(2)
 
   const supabase = createSupabaseServiceClient()
 
@@ -137,6 +146,8 @@ export async function POST(request: Request) {
     payer: {
       name: customer.name,
       email: customer.email,
+      ...(areaCode && phoneNumber ? { phone: { area_code: areaCode, number: phoneNumber } } : {}),
+      identification: { type: 'CPF', number: cpf },
     },
     back_urls: {
       success: `${baseUrl}/checkout/sucesso`,
@@ -156,9 +167,13 @@ export async function POST(request: Request) {
     .update({ mp_preference_id: prefResponse.id })
     .eq('id', order.id)
 
+  const isSandbox = process.env.MERCADO_PAGO_SANDBOX === 'true'
+  const redirectUrl = isSandbox
+    ? (prefResponse.sandbox_init_point ?? prefResponse.init_point)
+    : (prefResponse.init_point ?? prefResponse.sandbox_init_point)
+
   return Response.json({
     order_id: order.id,
-    init_point: prefResponse.init_point,
-    sandbox_init_point: prefResponse.sandbox_init_point,
+    redirect_url: redirectUrl,
   })
 }
