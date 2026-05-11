@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
 type InitialData = {
@@ -28,7 +27,6 @@ const labelStyle: React.CSSProperties = {
 export default function ArtesaoForm({ initialData }: { initialData?: InitialData }) {
   const isEditing = !!initialData
   const router = useRouter()
-  const supabase = createSupabaseBrowserClient()
 
   const [form, setForm] = useState({
     name: initialData?.name ?? '',
@@ -58,12 +56,20 @@ export default function ArtesaoForm({ initialData }: { initialData?: InitialData
     }
 
     try {
-      if (isEditing && initialData) {
-        const { error } = await supabase.from('artisans').update(payload).eq('id', initialData.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('artisans').insert(payload)
-        if (error) throw error
+      const url = isEditing && initialData
+        ? `/api/admin/artisans/${initialData.id}`
+        : '/api/admin/artisans'
+      const method = isEditing && initialData ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const { error: msg } = await res.json()
+        throw new Error(msg ?? 'Erro desconhecido')
       }
 
       router.push('/admin/artesaos')

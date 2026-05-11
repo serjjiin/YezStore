@@ -39,7 +39,8 @@ export default async function middleware(request: NextRequest) {
   // ============================================================
   // 3. Protecao de rotas admin (Supabase auth)
   // ============================================================
-  if (pathname.startsWith('/admin')) {
+  const isAdminPath = pathname.startsWith('/admin') || pathname.startsWith('/api/admin')
+  if (isAdminPath) {
     let supabaseResponse = NextResponse.next({ request })
 
     const supabase = createServerClient(
@@ -71,6 +72,9 @@ export default async function middleware(request: NextRequest) {
     }
 
     if (!isLoginPage && !user) {
+      if (pathname.startsWith('/api/admin')) {
+        return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
+      }
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
@@ -83,6 +87,7 @@ export default async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/api/admin/:path*',
     '/((?!_next/static|_next/image|favicon.ico|preview-login).*)',
   ],
 }

@@ -2,11 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 
 export default function ToggleProductButton({ id, isActive }: { id: string; isActive: boolean }) {
   const router = useRouter()
-  const supabase = createSupabaseBrowserClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,12 +15,14 @@ export default function ToggleProductButton({ id, isActive }: { id: string; isAc
     if (!confirm(message)) return
     setLoading(true)
     setError(null)
-    const { error } = await supabase
-      .from('products')
-      .update({ is_active: !isActive })
-      .eq('id', id)
-    if (error) {
-      setError(error.message)
+    const res = await fetch(`/api/admin/products/${id}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: !isActive }),
+    })
+    if (!res.ok) {
+      const { error: msg } = await res.json()
+      setError(msg ?? 'Erro desconhecido')
       setLoading(false)
       return
     }
