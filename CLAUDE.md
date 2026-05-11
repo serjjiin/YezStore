@@ -114,7 +114,7 @@ MERCADO_PAGO_ACCESS_TOKEN=       # APP_USR-... (sandbox) ou produção
 MERCADO_PAGO_WEBHOOK_SECRET=     # secret do webhook MP (Dashboard MP > Webhooks)
 MELHOR_ENVIO_TOKEN=
 MELHOR_ENVIO_URL=                # https://melhorenvio.com.br (produção)
-MELHOR_ENVIO_CEP_ORIGEM=         # 73086130 (sede da Yez)
+MELHOR_ENVIO_CEP_ORIGEM=         # <cep-origem>
 NEXT_PUBLIC_BASE_URL=            # base para back_urls do MP e webhook
 NEXT_PUBLIC_YEZ_PREVIEW_SECRET=  # senha compartilhada para acessar previews Vercel
 ```
