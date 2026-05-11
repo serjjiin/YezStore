@@ -13,11 +13,11 @@ export default async function middleware(request: NextRequest) {
   }
 
   // ============================================================
-  // 2. Protecao de preview Vercel
-  //    So ativa quando VERCEL_ENV=preview e NEXT_PUBLIC_YEZ_PREVIEW_SECRET configurado
+  // 2. Protecao por senha (todos os ambientes)
+  //    Ativa quando NEXT_PUBLIC_YEZ_PREVIEW_SECRET esta configurado
   // ============================================================
   const previewSecret = process.env.NEXT_PUBLIC_YEZ_PREVIEW_SECRET
-  if (process.env.VERCEL_ENV === 'preview' && previewSecret) {
+  if (previewSecret) {
     const previewCookie = request.cookies.get('__yez_preview_token')
 
     if (previewCookie?.value !== previewSecret) {
