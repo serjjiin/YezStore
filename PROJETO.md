@@ -1,7 +1,7 @@
 # Yez Store — Documentação Completa do Projeto
 
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
-> Última atualização: 2026-05-05 — 4 bugs cosméticos do admin corrigidos: memory leak em blob URL, filtros de pedidos derivados de `STATUS_LABELS`, `alt` de imagem e mensagem de erro genérica no checkout.
+> Última atualização: 2026-05-11 — PR #46: middleware de proteção (preview + admin + webhook), fallback de URL no checkout, CPF/phone no payer MP, correção das páginas de retorno, preview-login.
 
 > 📋 **Revisão técnica histórica disponível em [`REVISAO.md`](./REVISAO.md)** — congelada em 2026-04-28; o estado atual está aqui em `PROJETO.md`.
 
@@ -84,7 +84,7 @@
 |---|---|---|
 | RF-02.1 | Preencher dados pessoais (nome, email, telefone) | ✅ |
 | RF-02.2 | Auto-preenchimento de endereço ao digitar CEP (ViaCEP) | ✅ |
-| RF-02.3 | Redirecionar para pagamento no Mercado Pago | ⏳ Aguardando conta MP |
+| RF-02.3 | Redirecionar para pagamento no Mercado Pago | ✅ (sandbox) |
 | RF-02.4 | Exibir página de sucesso/falha/pendente após pagamento | ✅ (páginas prontas) |
 | RF-02.5 | Limpar carrinho após compra confirmada | ✅ |
 | RF-02.6 | Validar estoque e decrementar atomicamente no checkout | ✅ |
@@ -94,8 +94,8 @@
 
 | ID | Requisito | Status |
 |---|---|---|
-| RF-03.1 | Receber notificação de pagamento do Mercado Pago | ⏳ Aguardando conta MP |
-| RF-03.2 | Atualizar status do pedido automaticamente | ⏳ Aguardando conta MP |
+| RF-03.1 | Receber notificação de pagamento do Mercado Pago | ✅ (sandbox) |
+| RF-03.2 | Atualizar status do pedido automaticamente | ✅ (sandbox) |
 | RF-03.3 | Verificar assinatura do webhook (segurança) | ✅ |
 
 ### RF-04 — Painel Admin
@@ -236,7 +236,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 ## 9. Segurança
 
 ### Protegido
-- Rotas `/admin/*` → `proxy.ts` (middleware Next.js 16) verifica sessão Supabase
+- Rotas `/admin/*` → `middleware.ts` verifica sessão Supabase + preview protection + webhook passthrough
 - `SUPABASE_SERVICE_ROLE_KEY` e `MERCADO_PAGO_ACCESS_TOKEN` — nunca ao cliente
 - Preços sempre buscados do banco no checkout (nunca confiando no body do cliente)
 - RLS com `is_admin()` — verifica `app_metadata.role = 'admin'` no JWT, não só `authenticated`
@@ -263,9 +263,9 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 - **Não implementado:** geração de etiqueta, rastreamento
 
 ### Mercado Pago
-- **Status:** ⏳ Aguardando criação de conta
-- **Token atual:** `TEST` (inválido — checkout não funciona)
-- **Quando configurar:** substituir `MERCADO_PAGO_ACCESS_TOKEN` no `.env.local` e Vercel
+- **Status:** ✅ Sandbox funcionando (`MERCADO_PAGO_SANDBOX=true`)
+- **Token atual:** `APP_USR-...` (sandbox)
+- **Próximo passo:** trocar para token de produção quando a conta for aprovada
 
 ### ViaCEP
 - **Status:** ✅ Ativo no checkout
@@ -291,6 +291,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | `/checkout/sucesso` | Client Component | ✅ |
 | `/checkout/pendente` | Client Component | ✅ |
 | `/checkout/falha` | Client Component | ✅ |
+| `/preview-login` | Client Component | ✅ |
 
 ### Painel admin
 
@@ -331,7 +332,8 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 - [x] Sacola com fotos, contador no nav, feedback de adição
 - [x] Cálculo de frete real (Melhor Envio produção)
 - [x] Checkout com auto-preenchimento de CEP (ViaCEP)
-- [x] Páginas de retorno do Mercado Pago (aguardando conta MP)
+- [x] Páginas de retorno do Mercado Pago (sandbox funcionando)
+- [x] Proteção de preview (`/preview-login`) e admin via middleware
 - [x] Painel admin completo (login, produtos, artesãos, pedidos)
 - [x] Formatação de moeda em pt-BR
 - [x] Acessibilidade básica (focus, aria-labels)
@@ -494,3 +496,4 @@ git checkout main && git pull  # após merge
 | #43 | Log de falha de `increment_stock` no webhook do MP — payload selecionado, sem PII | ✅ Merged |
 | #44 | Sincroniza `PROJETO.md` e marca `REVISAO.md` como histórico | ✅ Merged |
 | #45 | 4 bugs admin: memory leak blob URL, filtros de `STATUS_LABELS`, `alt` de imagem, mensagem de erro genérica | ✅ Merged |
+| #46 | Middleware de proteção (preview + admin + webhook), fallback de URL no checkout, CPF/phone no payer MP, correção das páginas de retorno, preview-login | ✅ Merged |
