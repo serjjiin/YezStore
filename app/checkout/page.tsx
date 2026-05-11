@@ -3,27 +3,8 @@
 import { useState } from 'react'
 import { useCartStore } from '@/app/lib/store'
 import { formatCurrency, formatCep, formatCpf } from '@/app/lib/format'
+import { inputStyle, labelStyle } from '@/app/lib/formStyles'
 import Link from 'next/link'
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  border: '1px solid var(--yez-lightgray)',
-  background: 'var(--yez-white)',
-  padding: '12px 14px',
-  fontSize: 13,
-  fontFamily: "'Josefin Sans', sans-serif",
-  outline: 'none',
-  color: 'var(--yez-black)',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 10,
-  letterSpacing: 1.5,
-  textTransform: 'uppercase' as const,
-  color: 'var(--yez-gray)',
-  display: 'block',
-  marginBottom: 6,
-}
 
 export default function CheckoutPage() {
   const { items, shipping, subtotal, total, clearCart } = useCartStore()

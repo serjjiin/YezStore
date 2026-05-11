@@ -3,17 +3,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  border: '1px solid var(--yez-lightgray)',
-  background: 'var(--yez-white)',
-  padding: '12px 14px',
-  fontSize: 13,
-  fontFamily: "'Josefin Sans', sans-serif",
-  outline: 'none',
-  color: 'var(--yez-black)',
-}
+import { inputStyle } from '@/app/lib/formStyles'
 
 function PreviewLoginForm() {
   const searchParams = useSearchParams()

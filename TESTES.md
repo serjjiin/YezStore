@@ -63,25 +63,73 @@ expect(formatPhone('(11) 98765-4321')).toBe('(11) 98765-4321')
 ## Estrutura de arquivos
 
 ```
-app/lib/
-  format.ts                     ← código
-  store.ts                      ← código
+app/
+  lib/
+    format.ts
+    store.ts
+    formStyles.ts
+    __tests__/
+      format.test.ts
+      store.test.ts
+  components/
+    CartLink.tsx
+    AddToCartButton.tsx
+    FreteCalculator.tsx
+    __tests__/
+      CartLink.test.tsx
+      AddToCartButton.test.tsx
+      FreteCalculator.test.tsx
+  checkout/
+    page.tsx
+    __tests__/
+      page.test.tsx
+  sacola/
+    page.tsx
+    __tests__/
+      page.test.tsx
+  admin/
+    lib/
+      orderTotals.ts
+      __tests__/
+        orderTotals.test.ts
+    produtos/
+      ProdutoForm.tsx
+      __tests__/
+        ProdutoForm.test.tsx
+  api/
+    checkout/route.ts
+    frete/route.ts
+    webhooks/mercadopago/route.ts
+    admin/
+      products/route.ts
+      products/[id]/route.ts
+      products/[id]/toggle/route.ts
+      artisans/route.ts
+      artisans/[id]/route.ts
+      orders/[id]/status/route.ts
+    __tests__/
+      checkout.test.ts
+      frete.test.ts
+      webhook-mercadopago.test.ts
+      admin-products.test.ts
+      admin-products-toggle.test.ts
+      admin-artisans.test.ts
+      admin-orders.test.ts
   __tests__/
-    format.test.ts              ← testes de format.ts
-    store.test.ts               ← testes do carrinho Zustand
+    middleware.test.ts
 ```
 
 ### Convenção de nomenclatura
 
 - Arquivos de teste ficam em `__tests__/` dentro da mesma pasta do arquivo testado
 - Nome do arquivo: `[nome-do-arquivo].test.ts`
-- Futuramente: componentes React em `app/components/__tests__/`
+- Componentes React usam `// @vitest-environment jsdom` no topo do arquivo
 
 ---
 
 ## O que está testado
 
-**Total: 63 testes — todos passando**
+**Total: 238 testes — todos passando (17 arquivos)**
 
 ### `app/lib/__tests__/format.test.ts` — 13 testes
 
@@ -207,29 +255,182 @@ Testa o Route Handler `POST /api/webhooks/mercadopago` com `vi.stubGlobal('fetch
 
 ---
 
+### `app/api/__tests__/frete.test.ts` — 14 testes
+
+Testa o Route Handler `POST /api/frete` com mock do Melhor Envio.
+
+| Grupo | Teste |
+|---|---|
+| Validação de input | 400 sem CEP, CEP < 8 dígitos, CEP > 8 dígitos; aceita CEP com máscara; 400 se totalItems zero, negativo, não número; 400 se body JSON inválido |
+| Token ausente | 500 sem `MELHOR_ENVIO_TOKEN` |
+| Erros externos | 502 se Melhor Envio retornar erro HTTP; 502 em falha de rede |
+| Sucesso | 200 com opções de frete; CEP normalizado enviado; peso mínimo de 100g |
+
+### `app/api/__tests__/admin-products.test.ts` — 16 testes
+
+Testa os Route Handlers `POST /api/admin/products` e `PUT /api/admin/products/[id]` com mock do Supabase service client e upload de imagem.
+
+| Grupo | Teste |
+|---|---|
+| POST — validação | 400 se body não for FormData, sem title, sem price, sem stock_quantity, price inválido |
+| POST — sucesso | 201 sem imagem (image_url: null); 201 com imagem (upload no storage) |
+| POST — erros | 500 se upload de imagem falhar; 500 se insert no DB falhar |
+| POST — defaults | is_active default true quando ausente |
+| PUT — validação | 400 se body não for FormData |
+| PUT — sucesso | 200 preservando imagem existente; 200 com nova imagem |
+| PUT — erros | 404 se produto não encontrado; 500 se update no DB falhar |
+| PUT — defaults | image_url null quando produto não tem imagem |
+
+### `app/api/__tests__/admin-products-toggle.test.ts` — 6 testes
+
+Testa o Route Handler `PATCH /api/admin/products/[id]/toggle`.
+
+| Grupo | Teste |
+|---|---|
+| Validação | 400 se is_active não for booleano, body inválido, is_active ausente |
+| Sucesso | 200 ativa produto (true); 200 desativa produto (false) |
+| Erro DB | 500 se Supabase retornar erro |
+
+### `app/api/__tests__/admin-artisans.test.ts` — 16 testes
+
+Testa os Route Handlers de CRUD de artesãos: `POST /api/admin/artisans`, `PUT /api/admin/artisans/[id]` e `DELETE /api/admin/artisans/[id]`.
+
+| Grupo | Teste |
+|---|---|
+| POST — validação | 400 body inválido, sem name, name vazio; split < 1, > 99, não número |
+| POST — sucesso | 201; campos opcionais vazios convertidos para null |
+| POST — erro | 500 se Supabase der erro |
+| PUT — validação | 400 body inválido, sem name |
+| PUT — sucesso | 200 atualiza dados |
+| PUT — erro | 500 se Supabase der erro |
+| DELETE — sucesso | 200 remove artesão |
+| DELETE — erros | FK violation → "Não é possível remover artesã com produtos vinculados."; 500 para outro erro |
+
+### `app/api/__tests__/admin-orders.test.ts` — 8 testes
+
+Testa o Route Handler `PATCH /api/admin/orders/[id]/status`.
+
+| Grupo | Teste |
+|---|---|
+| Validação | 400 body inválido, status ausente, status inválido |
+| Sucesso | 200 para cada status válido: pending, paid, shipped, cancelled |
+| Erro DB | 500 se Supabase der erro |
+
+### `app/__tests__/middleware.test.ts` — 15 testes
+
+Testa o middleware do Next.js com 3 camadas de proteção: webhook passthrough, preview protection e admin authentication.
+
+| Grupo | Teste |
+|---|---|
+| Webhook passthrough | permite webhook sem auth; permite mesmo em preview |
+| Preview protection | sem proteção fora de preview; bloqueia páginas; 401 para API routes; permite com cookie válido; inativa sem secret; preserva path no redirect |
+| Admin protection | /admin e /admin/produtos redirecionam sem sessão; /admin/login redireciona com sessão ativa; /admin/login sem sessão passa; rota admin com sessão passa |
+| Interação entre camadas | preview tem prioridade sobre admin; preview + admin sem sessão redireciona para admin/login |
+
+### `app/components/__tests__/CartLink.test.tsx` — 5 testes
+
+Testa o componente `CartLink` que exibe o link da sacola com contagem de itens. Renderizado com `@testing-library/react` em ambiente jsdom.
+
+| Grupo | Teste |
+|---|---|
+| Estado vazio | exibe "Sacola" sem contagem; não exibe contagem quando 0 itens |
+| Com itens | exibe contagem total (soma quantidades); link aponta para /sacola |
+
+### `app/components/__tests__/AddToCartButton.test.tsx` — 11 testes
+
+Testa o componente `AddToCartButton` com jsdom e `userEvent`.
+
+| Grupo | Teste |
+|---|---|
+| Estado visual | "Adicionar à sacola" com estoque ou sem stock informado; "Esgotado" com zero ou negativo |
+| Botão | desabilitado se esgotado; habilitado com estoque |
+| Interação | chama addItem ao clicar; não chama se esgotado |
+| Feedback | exibe "Adicionado ✓" após clique; volta ao texto original após 1500ms; ainda visível antes do timeout |
+
+### `app/components/__tests__/FreteCalculator.test.tsx` — 16 testes
+
+Testa o componente `FreteCalculator` que consulta frete via API e exibe opções.
+
+| Grupo | Teste |
+|---|---|
+| Renderização | input de CEP e botão Calcular; input começa vazio |
+| Validação | erro visual se CEP < 8 dígitos; não chama fetch com CEP inválido |
+| Carregamento | botão mostra "..." e fica desabilitado durante fetch |
+| Resposta | exibe opções com empresa+nome; preço formatado; prazo; filtra opções com campo error; chama fetch com CEP limpo e totalItems |
+| Erro | mensagem da API; "Nenhuma opção disponível"; erro genérico de rede |
+| Seleção | clicar chama setShipping; clicar na já selecionada chama setShipping(null) |
+| Tecla Enter | Enter no input dispara cálculo |
+
+### `app/sacola/__tests__/page.test.tsx` — 22 testes
+
+Testa a página de sacola (`/sacola`) com store mockada.
+
+| Grupo | Teste |
+|---|---|
+| Estado vazio | "Sua sacola está vazia"; link "Ver produtos" → "/"; "0 itens"; sem FreteCalculator |
+| Lista de itens | título, artesão, preço × quantidade, quantidade; singular "1 item", plural "N itens"; FreteCalculator presente |
+| Controles | aumentar → updateQuantity; diminuir → updateQuantity; remover → removeItem |
+| Resumo | subtotal; "Calcule acima" sem frete; valor do frete; total com frete |
+| Checkout | "Calcule o frete para continuar" sem frete; "Finalizar compra →" com frete; link → /checkout; preventDefault sem frete |
+
+### `app/checkout/__tests__/page.test.tsx` — 20 testes
+
+Testa a página de checkout (`/checkout`) com store mockada, ViaCEP e submissão.
+
+| Grupo | Teste |
+|---|---|
+| Sacola vazia | "Sua sacola está vazia"; link "Ver produtos" → "/"; formulário oculto |
+| Formulário | campos renderizados; botão "Ir para o pagamento →" |
+| Validação | erro com campos vazios; não chama fetch |
+| ViaCEP | preenche endereço automaticamente; "Buscando endereço..."; erro se CEP não encontrado |
+| Submissão | redirect para redirect_url; sandbox; limpa carrinho; "Processando..." e botão desabilitado; dados corretos enviados |
+| Erros | mensagem da API; "Erro de conexão" |
+| Resumo | subtotal formatado; "Não calculado" sem frete; valor e nome do frete |
+
+### `app/admin/produtos/__tests__/ProdutoForm.test.tsx` — 3 testes
+
+Testa o componente `ProdutoForm` quanto ao gerenciamento de memória de `URL.createObjectURL`.
+
+| Grupo | Teste |
+|---|---|
+| Memory leak | revoga URL anterior ao selecionar nova imagem; revoga URL ao desmontar; não chama revoke sem imagem |
+
+### `app/admin/lib/__tests__/orderTotals.test.ts` — 6 testes
+
+Testa as funções utilitárias `getOrderTotal` e `getOrderProductsSubtotal`.
+
+| Grupo | Teste |
+|---|---|
+| getOrderTotal | retorna total_amount como número; aceita string (Postgres numeric); lida com pedido sem frete |
+| getOrderProductsSubtotal | retorna total_amount - shipping_cost; aceita string; retorna total_amount integral sem frete |
+
+---
+
 ## O que testar a seguir
 
-### Nível 4 — Componentes React
+### Nível concluído — Componentes React (Nível 4)
 
-Para testar componentes como `AddToCartButton` e `FreteCalculator`:
+Componentes React já estão testados com `@testing-library/react`, `userEvent` e ambiente `jsdom`:
 
-```bash
-npm install -D @testing-library/react @testing-library/user-event jsdom
-```
+- `AddToCartButton` — estados visuais, interação, feedback de "adicionado"
+- `CartLink` — exibição com e sem itens
+- `FreteCalculator` — cálculo, validação de CEP, seleção de opção
+- `ProdutoForm` — memory leak de `URL.createObjectURL`
+- Páginas `Sacola` e `Checkout` — renderização, formulário, submissão
 
-E atualizar `vitest.config.ts`:
-```ts
-test: {
-  environment: 'jsdom', // necessário para simular o DOM do browser
-}
-```
+### Próximas oportunidades de teste
 
-**Exemplos de casos para `AddToCartButton`:**
-```
-→ renderiza botão "Adicionar à sacola"
-→ ao clicar, mostra "Adicionado ✓" por alguns segundos
-→ botão fica desabilitado quando estoque = 0
-```
+**Testes de integração (Nível 5)**
+- `POST /api/checkout` + página de checkout — teste de ponta a ponta simulando fluxo completo
+- Fluxo admin: criar produto → listar → editar → desativar
+
+**Testes de regressão visual (Nível 6)**
+- Stories com `@storybook/react` para componentes visuais
+- Snapshot testing para detectar mudanças não intencionais no markup
+
+**Testes de segurança**
+- RLS policies: verificar que cliente não consegue acessar dados de outros clientes
+- Rate limiting nos endpoints de API
 
 ---
 
