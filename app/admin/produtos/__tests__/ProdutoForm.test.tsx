@@ -3,12 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import ProdutoForm from '../ProdutoForm'
 
-vi.mock('@/app/lib/supabase-browser', () => ({
-  createSupabaseBrowserClient: vi.fn(() => ({
-    storage: { from: vi.fn(() => ({ upload: vi.fn(), getPublicUrl: vi.fn() })) },
-  })),
-}))
-
 vi.mock('next/navigation', () => ({ useRouter: vi.fn(() => ({ push: vi.fn() })) }))
 
 const createObjectURLMock = vi.fn()

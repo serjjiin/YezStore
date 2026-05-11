@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
 const CATEGORIAS = ['Decoração', 'Semi-joias', 'Infantil', 'Crochê', 'Louças', 'Outros']
@@ -38,7 +37,6 @@ const labelStyle: React.CSSProperties = {
 export default function ProdutoForm({ artisans, initialData }: Props) {
   const isEditing = !!initialData
   const router = useRouter()
-  const supabase = createSupabaseBrowserClient()
 
   const [form, setForm] = useState({
     title: initialData?.title ?? '',
@@ -86,43 +84,31 @@ export default function ProdutoForm({ artisans, initialData }: Props) {
     setLoading(true)
 
     try {
-      let imageUrl = initialData?.image_url ?? null
+      const formData = new FormData()
+      formData.append('title', form.title)
+      formData.append('description', form.description)
+      formData.append('price', form.price)
+      formData.append('stock_quantity', form.stock_quantity)
+      formData.append('category', form.category)
+      formData.append('artisan_id', form.artisan_id)
+      formData.append('is_active', form.is_active ? 'true' : 'false')
 
-      // Upload de imagem se houver novo arquivo
       if (imageFile) {
-        const ext = imageFile.name.split('.').pop()
-        const path = `${crypto.randomUUID()}.${ext}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('produtos')
-          .upload(path, imageFile, { upsert: true })
-
-        if (uploadError) {
-          setError('Erro ao fazer upload da imagem. Verifique se o bucket "produtos" existe no Supabase Storage.')
-          return
-        }
-
-        const { data: urlData } = supabase.storage.from('produtos').getPublicUrl(path)
-        imageUrl = urlData.publicUrl
+        formData.append('image', imageFile)
+      } else if (initialData?.image_url) {
+        formData.append('existing_image_url', initialData.image_url)
       }
 
-      const payload = {
-        title: form.title,
-        description: form.description,
-        price: parseFloat(form.price),
-        stock_quantity: parseInt(form.stock_quantity, 10),
-        category: form.category,
-        artisan_id: form.artisan_id || null,
-        image_url: imageUrl,
-        is_active: form.is_active,
-      }
+      const url = isEditing && initialData
+        ? `/api/admin/products/${initialData.id}`
+        : '/api/admin/products'
+      const method = isEditing && initialData ? 'PUT' : 'POST'
 
-      if (isEditing && initialData) {
-        const { error } = await supabase.from('products').update(payload).eq('id', initialData.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('products').insert(payload)
-        if (error) throw error
+      const res = await fetch(url, { method, body: formData })
+
+      if (!res.ok) {
+        const { error: msg } = await res.json()
+        throw new Error(msg ?? 'Erro desconhecido')
       }
 
       router.push('/admin/produtos')

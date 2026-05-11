@@ -2,11 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 
 export default function DeleteArtisanButton({ id }: { id: string }) {
   const router = useRouter()
-  const supabase = createSupabaseBrowserClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -14,9 +12,10 @@ export default function DeleteArtisanButton({ id }: { id: string }) {
     if (!confirm('Remover este artesão? Os produtos vinculados ficarão sem artesã associada.')) return
     setLoading(true)
     setError(null)
-    const { error } = await supabase.from('artisans').delete().eq('id', id)
-    if (error) {
-      setError(error.message)
+    const res = await fetch(`/api/admin/artisans/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const { error: msg } = await res.json()
+      setError(msg ?? 'Erro desconhecido')
       setLoading(false)
       return
     }

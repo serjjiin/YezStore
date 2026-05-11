@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 
 const STATUSES = [
@@ -22,15 +21,19 @@ export default function UpdateOrderStatus({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createSupabaseBrowserClient()
 
   async function handleUpdate() {
     if (status === currentStatus) return
     setLoading(true)
     setError(null)
-    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId)
-    if (error) {
-      setError(error.message)
+    const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (!res.ok) {
+      const { error: msg } = await res.json()
+      setError(msg ?? 'Erro desconhecido')
       setStatus(currentStatus)
       setLoading(false)
       return
