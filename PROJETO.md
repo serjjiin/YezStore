@@ -403,13 +403,13 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | `<img>` em vez de `next/image` | Baixo | [#18](https://github.com/serjjiin/YezStore/issues/18) |
 | `ShippingOption.price` é `string` | Baixo | [#20](https://github.com/serjjiin/YezStore/issues/20) — trocar por `number` |
 | Sem snapshot de `split_percentage` em `order_items` | Médio | [#38](https://github.com/serjjiin/YezStore/issues/38) — necessário antes do relatório de repasse |
-| CI sem cache de npm no `setup-node` | Baixo | [#41](https://github.com/serjjiin/YezStore/issues/41) |
 | Env vars fake no step de Build do CI | Baixo | [#42](https://github.com/serjjiin/YezStore/issues/42) — frágil se SSG depender de dados reais |
-| `parseProductFormData` duplicado em múltiplos handlers | Médio | [#48](https://github.com/serjjiin/YezStore/issues/48) — extrair helper compartilhado |
-| `is_active` mistura soft-delete com filtro de vitrine | Médio | [#49](https://github.com/serjjiin/YezStore/issues/49) — simplificar semântica |
-| `image_url` vindo do cliente no formulário admin | Alto | [#50](https://github.com/serjjiin/YezStore/issues/50) — buscar do banco após upload |
 | Sem testes no middleware `/api/admin/*` | Médio | [#51](https://github.com/serjjiin/YezStore/issues/51) — cobrir proteção de rotas |
-| Helpers de chain (`expect().toBeXYZ()`) duplicados entre testes | Baixo | [#52](https://github.com/serjjiin/YezStore/issues/52) — extrair para arquivo compartilhado |
+| Helpers de chain duplicados entre testes | Baixo | [#52](https://github.com/serjjiin/YezStore/issues/52) — extrair para arquivo compartilhado |
+| ~~Cache de npm ausente no CI~~ | ~~Baixo~~ | ~~PR #53 — adicionado `cache: 'npm'` ao `setup-node`~~ |
+| ~~`parseProductFormData` duplicado entre POST/PUT products~~ | ~~Médio~~ | ~~PR #53 — extraído para `shared.ts`~~ |
+| ~~Lógica frágil de `is_active` string→boolean nos Route Handlers~~ | ~~Médio~~ | ~~PR #53 — simplificado para `!== 'false'`~~ |
+| ~~`image_url` confiado do cliente no PUT products~~ | ~~Alto~~ | ~~PR #53 — busca do banco em vez de `existing_image_url`~~ |
 | ~~Sem restauração de estoque em falha~~ | ~~Alto~~ | ~~Webhook `cancelled` + log de falha — PR #43~~ |
 | ~~API routes sem cobertura~~ | ~~Alto~~ | ~~163 testes com Vitest + TDD — PR #10/#11~~ |
 | ~~Carrinho não persiste ao recarregar~~ | ~~Médio~~ | ~~Zustand `persist` middleware — já implementado em `app/lib/store.ts`~~ |

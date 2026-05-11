@@ -1,5 +1,5 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
-import { parseProductFormData } from './shared'
+import { parseProductFormData, uploadProductImage } from './shared'
 
 export async function POST(request: Request) {
   let formData: FormData
@@ -15,24 +15,9 @@ export async function POST(request: Request) {
 
   const supabase = createSupabaseServiceClient()
 
-  let imageUrl: string | null = null
-  const imageFile = formData.get('image') as File | null
-
-  if (imageFile && imageFile.size > 0) {
-    const ext = imageFile.name.split('.').pop()
-    const path = `${crypto.randomUUID()}.${ext}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('produtos')
-      .upload(path, imageFile, { upsert: true })
-
-    if (uploadError) {
-      return Response.json({ error: 'Erro ao fazer upload da imagem.' }, { status: 500 })
-    }
-
-    const { data: urlData } = supabase.storage.from('produtos').getPublicUrl(path)
-    imageUrl = urlData.publicUrl
-  }
+  const uploaded = await uploadProductImage(supabase, formData)
+  if (!uploaded.ok) return uploaded.error
+  const imageUrl = uploaded.imageUrl
 
   const { data, error } = await supabase
     .from('products')

@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+
 export interface ProductFields {
   title: string
   description: string | null
@@ -25,7 +27,7 @@ export function parseProductFormData(formData: FormData): ParseResult {
   const stock_quantity = parseInt(stockStr, 10)
 
   if (isNaN(price) || price < 0) return { ok: false, error: Response.json({ error: 'Preço inválido.' }, { status: 400 }) }
-  if (isNaN(stock_quantity) || stock_quantity < 0) return { ok: false, error: Response.json({ error: 'Estoque inválido.' }, { status: 400 }) }
+  if (isNaN(stock_quantity) || stock_quantity < 1) return { ok: false, error: Response.json({ error: 'Estoque deve ser maior que zero.' }, { status: 400 }) }
 
   const is_active = formData.get('is_active') !== 'false'
 
@@ -41,4 +43,32 @@ export function parseProductFormData(formData: FormData): ParseResult {
       is_active,
     },
   }
+}
+
+type UploadResult =
+  | { ok: true; imageUrl: string | null }
+  | { ok: false; error: Response }
+
+export async function uploadProductImage(
+  supabase: SupabaseClient,
+  formData: FormData
+): Promise<UploadResult> {
+  const imageFile = formData.get('image') as File | null
+  if (!imageFile || imageFile.size === 0) {
+    return { ok: true, imageUrl: null }
+  }
+
+  const ext = imageFile.name.split('.').pop()
+  const path = `${crypto.randomUUID()}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('produtos')
+    .upload(path, imageFile, { upsert: true })
+
+  if (uploadError) {
+    return { ok: false, error: Response.json({ error: 'Erro ao fazer upload da imagem.' }, { status: 500 }) }
+  }
+
+  const { data: urlData } = supabase.storage.from('produtos').getPublicUrl(path)
+  return { ok: true, imageUrl: urlData.publicUrl }
 }

@@ -104,6 +104,15 @@ describe('POST /api/admin/products', () => {
     expect(res.status).toBe(400)
   })
 
+  it('retorna 400 se stock_quantity for zero', async () => {
+    const fd = new FormData()
+    fd.append('title', 'Produto')
+    fd.append('price', '10')
+    fd.append('stock_quantity', '0')
+    const res = await POST(makeFormRequest(fd))
+    expect(res.status).toBe(400)
+  })
+
   it('cria produto sem imagem — retorna 201', async () => {
     const { insertSpy } = makeInsertChain()
     const storageMock = makeStorageMock()

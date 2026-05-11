@@ -1,5 +1,5 @@
 import { createSupabaseServiceClient } from '@/app/lib/supabase-server'
-import { parseProductFormData } from '../shared'
+import { parseProductFormData, uploadProductImage } from '../shared'
 
 export async function PUT(
   request: Request,
@@ -20,7 +20,6 @@ export async function PUT(
 
   const supabase = createSupabaseServiceClient()
 
-  // Busca imagem atual do banco (nunca confia no cliente)
   const { data: current, error: fetchError } = await supabase
     .from('products')
     .select('image_url')
@@ -31,24 +30,10 @@ export async function PUT(
     return Response.json({ error: 'Produto não encontrado.' }, { status: 404 })
   }
 
-  let imageUrl: string | null = current.image_url
+  const uploaded = await uploadProductImage(supabase, formData)
+  if (!uploaded.ok) return uploaded.error
 
-  const imageFile = formData.get('image') as File | null
-  if (imageFile && imageFile.size > 0) {
-    const ext = imageFile.name.split('.').pop()
-    const path = `${crypto.randomUUID()}.${ext}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('produtos')
-      .upload(path, imageFile, { upsert: true })
-
-    if (uploadError) {
-      return Response.json({ error: 'Erro ao fazer upload da imagem.' }, { status: 500 })
-    }
-
-    const { data: urlData } = supabase.storage.from('produtos').getPublicUrl(path)
-    imageUrl = urlData.publicUrl
-  }
+  const imageUrl = uploaded.imageUrl ?? current.image_url
 
   const { error } = await supabase
     .from('products')
