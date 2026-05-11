@@ -116,8 +116,12 @@ export async function POST(request: Request) {
     }, { status: 503 })
   }
 
+  const isSandbox = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')
+  const useMpSandbox = process.env.MERCADO_PAGO_SANDBOX === 'true'
+
   const client = new MercadoPagoConfig({
     accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
+    ...(useMpSandbox ? { sandbox: true } : {}),
   })
   const preference = new Preference(client)
 
@@ -139,8 +143,6 @@ export async function POST(request: Request) {
     })
   }
 
-  const isLocalhost = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')
-
   const preferenceBody = {
     items: mpItems,
     payer: {
@@ -154,8 +156,8 @@ export async function POST(request: Request) {
       failure: `${baseUrl}/checkout/falha`,
       pending: `${baseUrl}/checkout/pendente`,
     },
-    ...(isLocalhost ? {} : { auto_return: 'approved' as const }),
-    ...(isLocalhost ? {} : { notification_url: `${baseUrl}/api/webhooks/mercadopago` }),
+    ...(isSandbox ? {} : { auto_return: 'approved' as const }),
+    ...(isSandbox ? {} : { notification_url: `${baseUrl}/api/webhooks/mercadopago` }),
     external_reference: order.id,
     statement_descriptor: 'Yez Store',
   }
@@ -167,8 +169,7 @@ export async function POST(request: Request) {
     .update({ mp_preference_id: prefResponse.id })
     .eq('id', order.id)
 
-  const isSandbox = process.env.MERCADO_PAGO_SANDBOX === 'true'
-  const redirectUrl = isSandbox
+  const redirectUrl = useMpSandbox
     ? (prefResponse.sandbox_init_point ?? prefResponse.init_point)
     : (prefResponse.init_point ?? prefResponse.sandbox_init_point)
 
