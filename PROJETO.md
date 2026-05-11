@@ -1,7 +1,7 @@
 # Yez Store — Documentação Completa do Projeto
 
 > Documento vivo. Atualizar sempre que decisões arquiteturais ou de produto mudarem.
-> Última atualização: 2026-05-11 — PR #46: middleware de proteção (preview + admin + webhook), fallback de URL no checkout, CPF/phone no payer MP, correção das páginas de retorno, preview-login.
+> Última atualização: 2026-05-11 — PR #47: operações admin de escrita migradas para Route Handlers com service role (7 novos endpoints, 74 testes).
 
 > 📋 **Revisão técnica histórica disponível em [`REVISAO.md`](./REVISAO.md)** — congelada em 2026-04-28; o estado atual está aqui em `PROJETO.md`.
 
@@ -401,7 +401,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | Dimensões de embalagem hardcoded | Médio | Cadastrar por produto ou categoria |
 | `<img>` em vez de `next/image` | Baixo | [#18](https://github.com/serjjiin/YezStore/issues/18) |
 | `ShippingOption.price` é `string` | Baixo | [#20](https://github.com/serjjiin/YezStore/issues/20) — trocar por `number` |
-| Operações admin de escrita usam anon key no browser | Médio | [#37](https://github.com/serjjiin/YezStore/issues/37) — mover para Server Actions / Route Handlers |
+| ~~Operações admin de escrita usam anon key no browser~~ | ~~Médio~~ | ~~PR #47 — movido para Route Handlers com service role~~ |
 | Sem snapshot de `split_percentage` em `order_items` | Médio | [#38](https://github.com/serjjiin/YezStore/issues/38) — necessário antes do relatório de repasse |
 | CI sem cache de npm no `setup-node` | Baixo | [#41](https://github.com/serjjiin/YezStore/issues/41) |
 | Env vars fake no step de Build do CI | Baixo | [#42](https://github.com/serjjiin/YezStore/issues/42) — frágil se SSG depender de dados reais |
@@ -497,3 +497,4 @@ git checkout main && git pull  # após merge
 | #44 | Sincroniza `PROJETO.md` e marca `REVISAO.md` como histórico | ✅ Merged |
 | #45 | 4 bugs admin: memory leak blob URL, filtros de `STATUS_LABELS`, `alt` de imagem, mensagem de erro genérica | ✅ Merged |
 | #46 | Middleware de proteção (preview + admin + webhook), fallback de URL no checkout, CPF/phone no payer MP, correção das páginas de retorno, preview-login | ✅ Merged |
+| #47 | Operações admin de escrita migradas para Route Handlers com service role (7 endpoints, 74 testes, 5 componentes refatorados) | ✅ Merged |
