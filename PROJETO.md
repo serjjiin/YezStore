@@ -245,11 +245,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 
 ### Vulnerabilidades conhecidas (a corrigir)
 
-| Risco | Descrição | Solução |
-|---|---|---|
-| Médio | Sem rate limiting em `/api/frete` e `/api/checkout` | Vercel Edge Middleware |
-| Médio | Sem restauração de estoque se pagamento falhar | Webhook `cancelled` → `stock_quantity += qty` |
-| Baixo | Sem sanitização XSS nos campos de texto admin | `sanitize-html` ou Content-Security-Policy |
+> Documentadas internamente. Repositório público — detalhes omitidos por segurança.
 
 ---
 
@@ -258,7 +254,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 ### Melhor Envio
 - **Status:** ✅ Token de produção configurado no `.env.local`
 - **URL:** `https://melhorenvio.com.br` (produção)
-- **CEP origem:** `73086130` (sede da Yez)
+- **CEP origem:** `<cep-origem>`
 - **Funcionalidade atual:** cálculo de frete
 - **Não implementado:** geração de etiqueta, rastreamento
 
@@ -274,7 +270,7 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 
 ### Supabase
 - **Status:** ✅ Configurado e funcionando
-- **Projeto:** `ezccgrycjpusqrcbegmw.supabase.co`
+- **Projeto:** `<supabase-project>.supabase.co`
 
 ---
 
@@ -431,7 +427,7 @@ GitHub (main) → Vercel (auto-deploy)
 ### Variáveis de ambiente
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://ezccgrycjpusqrcbegmw.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://<seu-projeto>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...             # nunca expor ao cliente
 
@@ -439,7 +435,7 @@ MERCADO_PAGO_ACCESS_TOKEN=...            # ⏳ aguardando conta
 
 MELHOR_ENVIO_TOKEN=...                   # ✅ configurado (produção)
 MELHOR_ENVIO_URL=https://melhorenvio.com.br
-MELHOR_ENVIO_CEP_ORIGEM=73086130
+MELHOR_ENVIO_CEP_ORIGEM=<cep-origem>
 
 NEXT_PUBLIC_BASE_URL=http://localhost:3000  # trocar para domínio em produção
 ```
