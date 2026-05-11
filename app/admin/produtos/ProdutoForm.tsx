@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { inputStyle, labelStyle } from '@/app/lib/formStyles'
 
 const CATEGORIAS = ['Decoração', 'Semi-joias', 'Infantil', 'Crochê', 'Louças', 'Outros']
 
@@ -20,18 +21,6 @@ type Props = {
     image_url: string | null
     is_active: boolean
   }
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', border: '1px solid var(--yez-lightgray)',
-  background: 'var(--yez-white)', padding: '11px 14px',
-  fontSize: 13, fontFamily: "'Josefin Sans', sans-serif",
-  outline: 'none', color: 'var(--yez-black)',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase' as const,
-  color: 'var(--yez-gray)', display: 'block', marginBottom: 6,
 }
 
 export default function ProdutoForm({ artisans, initialData }: Props) {
@@ -95,8 +84,6 @@ export default function ProdutoForm({ artisans, initialData }: Props) {
 
       if (imageFile) {
         formData.append('image', imageFile)
-      } else if (initialData?.image_url) {
-        formData.append('existing_image_url', initialData.image_url)
       }
 
       const url = isEditing && initialData

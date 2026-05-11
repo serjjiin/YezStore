@@ -29,8 +29,14 @@ function makeUpdateChain({ error = null as { message: string } | null } = {}) {
   const eqSpy = vi.fn().mockResolvedValue({ error })
   const updateSpy = vi.fn(() => ({ eq: eqSpy }))
 
-  const client = { from: vi.fn(() => ({ update: updateSpy })) }
-  return { client, updateSpy }
+  return { updateSpy, eqSpy }
+}
+
+function makeSelectSingleChain(data: unknown = { image_url: 'https://old-image.jpg' }) {
+  const single = vi.fn().mockResolvedValue({ data, error: null })
+  const eq = vi.fn(() => ({ single }))
+  const select = vi.fn(() => ({ eq }))
+  return { select, eq, single }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,6 +100,15 @@ describe('POST /api/admin/products', () => {
     fd.append('title', 'Produto')
     fd.append('price', 'abc')
     fd.append('stock_quantity', '5')
+    const res = await POST(makeFormRequest(fd))
+    expect(res.status).toBe(400)
+  })
+
+  it('retorna 400 se stock_quantity for zero', async () => {
+    const fd = new FormData()
+    fd.append('title', 'Produto')
+    fd.append('price', '10')
+    fd.append('stock_quantity', '0')
     const res = await POST(makeFormRequest(fd))
     expect(res.status).toBe(400)
   })
@@ -217,7 +232,8 @@ describe('PUT /api/admin/products/[id]', () => {
 
   it('atualiza produto preservando imagem existente', async () => {
     const { updateSpy } = makeUpdateChain()
-    const client = buildClient({ products: { update: updateSpy } })
+    const { select } = makeSelectSingleChain()
+    const client = buildClient({ products: { select, update: updateSpy } })
 
     vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
@@ -225,11 +241,11 @@ describe('PUT /api/admin/products/[id]', () => {
     fd.append('title', 'Sousplat Atualizado')
     fd.append('price', '59.90')
     fd.append('stock_quantity', '8')
-    fd.append('existing_image_url', 'https://old-image.jpg')
 
     const res = await PUT(makeFormRequest(fd), { params: Promise.resolve({ id: 'prod-1' }) })
     expect(res.status).toBe(200)
 
+    expect(select).toHaveBeenCalled()
     expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Sousplat Atualizado',
       image_url: 'https://old-image.jpg',
@@ -238,8 +254,9 @@ describe('PUT /api/admin/products/[id]', () => {
 
   it('atualiza produto com nova imagem', async () => {
     const { updateSpy } = makeUpdateChain()
+    const { select } = makeSelectSingleChain()
     const storageMock = makeStorageMock()
-    const client = buildClient({ products: { update: updateSpy } }, storageMock)
+    const client = buildClient({ products: { select, update: updateSpy } }, storageMock)
 
     vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
@@ -257,9 +274,27 @@ describe('PUT /api/admin/products/[id]', () => {
     }))
   })
 
+  it('retorna 404 se produto nao encontrado', async () => {
+    const { updateSpy } = makeUpdateChain()
+    const { single } = makeSelectSingleChain(null)
+    single.mockResolvedValue({ data: null, error: { message: 'not found' } })
+    const client = buildClient({ products: { select: vi.fn(() => ({ eq: vi.fn(() => ({ single })) })), update: updateSpy } })
+
+    vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+
+    const fd = new FormData()
+    fd.append('title', 'Sousplat')
+    fd.append('price', '59.90')
+    fd.append('stock_quantity', '8')
+
+    const res = await PUT(makeFormRequest(fd), { params: Promise.resolve({ id: 'inexistente' }) })
+    expect(res.status).toBe(404)
+  })
+
   it('retorna 500 se update no DB falhar', async () => {
     const { updateSpy } = makeUpdateChain({ error: { message: 'db error' } })
-    const client = buildClient({ products: { update: updateSpy } })
+    const { select } = makeSelectSingleChain()
+    const client = buildClient({ products: { select, update: updateSpy } })
 
     vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 
@@ -273,9 +308,10 @@ describe('PUT /api/admin/products/[id]', () => {
     expect(await res.json()).toEqual({ error: 'db error' })
   })
 
-  it('image_url fica null sem nova imagem e sem existing_image_url', async () => {
+  it('image_url default e null quando produto nao tem imagem', async () => {
     const { updateSpy } = makeUpdateChain()
-    const client = buildClient({ products: { update: updateSpy } })
+    const selectSingle = makeSelectSingleChain({ image_url: null })
+    const client = buildClient({ products: { select: selectSingle.select, update: updateSpy } })
 
     vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
 

@@ -138,7 +138,7 @@
 | RNF-02.3 | Acessibilidade básica (focus, aria-labels) | ✅ |
 | RNF-02.4 | Imagens com aspect-ratio correto | ✅ |
 | RNF-02.5 | CI/CD com GitHub Actions (lint + testes em todo push/PR) | ✅ |
-| RNF-02.6 | Cobertura de testes (163 testes — Vitest + TDD) | ✅ |
+| RNF-02.6 | Cobertura de testes (238 testes — Vitest + TDD) | ✅ |
 
 ---
 
@@ -343,7 +343,8 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 - [x] Verificação de assinatura HMAC-SHA256 no webhook MP
 - [x] RLS com `is_admin()` — policies corretas por role
 - [x] Validação e decremento atômico de estoque no checkout
-- [x] CI/CD com GitHub Actions (lint + 163 testes a cada push/PR)
+- [x] Operações admin de escrita migradas para Route Handlers com service role (elimina dependência de anon key no browser)
+- [x] CI/CD com GitHub Actions (lint + 238 testes a cada push/PR)
 - [x] TDD completo de componentes React (CartLink, AddToCartButton, FreteCalculator, sacola/page, checkout/page)
 
 ### O que falta para produção completa
@@ -401,10 +402,14 @@ Home → Produto → "Adicionar à sacola" (feedback ✓)
 | Dimensões de embalagem hardcoded | Médio | Cadastrar por produto ou categoria |
 | `<img>` em vez de `next/image` | Baixo | [#18](https://github.com/serjjiin/YezStore/issues/18) |
 | `ShippingOption.price` é `string` | Baixo | [#20](https://github.com/serjjiin/YezStore/issues/20) — trocar por `number` |
-| ~~Operações admin de escrita usam anon key no browser~~ | ~~Médio~~ | ~~PR #47 — movido para Route Handlers com service role~~ |
 | Sem snapshot de `split_percentage` em `order_items` | Médio | [#38](https://github.com/serjjiin/YezStore/issues/38) — necessário antes do relatório de repasse |
-| CI sem cache de npm no `setup-node` | Baixo | [#41](https://github.com/serjjiin/YezStore/issues/41) |
 | Env vars fake no step de Build do CI | Baixo | [#42](https://github.com/serjjiin/YezStore/issues/42) — frágil se SSG depender de dados reais |
+| Sem testes no middleware `/api/admin/*` | Médio | [#51](https://github.com/serjjiin/YezStore/issues/51) — cobrir proteção de rotas |
+| Helpers de chain duplicados entre testes | Baixo | [#52](https://github.com/serjjiin/YezStore/issues/52) — extrair para arquivo compartilhado |
+| ~~Cache de npm ausente no CI~~ | ~~Baixo~~ | ~~PR #53 — adicionado `cache: 'npm'` ao `setup-node`~~ |
+| ~~`parseProductFormData` duplicado entre POST/PUT products~~ | ~~Médio~~ | ~~PR #53 — extraído para `shared.ts`~~ |
+| ~~Lógica frágil de `is_active` string→boolean nos Route Handlers~~ | ~~Médio~~ | ~~PR #53 — simplificado para `!== 'false'`~~ |
+| ~~`image_url` confiado do cliente no PUT products~~ | ~~Alto~~ | ~~PR #53 — busca do banco em vez de `existing_image_url`~~ |
 | ~~Sem restauração de estoque em falha~~ | ~~Alto~~ | ~~Webhook `cancelled` + log de falha — PR #43~~ |
 | ~~API routes sem cobertura~~ | ~~Alto~~ | ~~163 testes com Vitest + TDD — PR #10/#11~~ |
 | ~~Carrinho não persiste ao recarregar~~ | ~~Médio~~ | ~~Zustand `persist` middleware — já implementado em `app/lib/store.ts`~~ |

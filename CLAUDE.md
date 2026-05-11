@@ -15,8 +15,8 @@ Ao iniciar uma nova conversa:
 
 ```
 1. Escolher uma issue do backlog (github.com/serjjiin/YezStore/issues)
-2. git checkout -b feat/nome-curto
-3. Escrever o teste (RED) → implementar (GREEN) → /simplify antes do PR
+2. git checkout -b <prefix>/nome-curto (prefixos válidos: feat/, fix/, refactor/, chore/, docs/, test/)
+3. Escrever o teste (RED) → implementar (GREEN) → **/simplify (obrigatório antes do PR)**
 4. gh pr create → /review → squash and merge → fechar a issue
 5. git fetch --prune origin && git checkout main && git pull
 ```
