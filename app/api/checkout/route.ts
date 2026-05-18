@@ -117,11 +117,8 @@ export async function POST(request: Request) {
   }
 
   const isSandbox = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')
-  const useMpSandbox = process.env.MERCADO_PAGO_SANDBOX === 'true'
-
   const client = new MercadoPagoConfig({
     accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
-    ...(useMpSandbox ? { sandbox: true } : {}),
   })
   const preference = new Preference(client)
 
@@ -169,9 +166,8 @@ export async function POST(request: Request) {
     .update({ mp_preference_id: prefResponse.id })
     .eq('id', order.id)
 
-  const redirectUrl = useMpSandbox
-    ? (prefResponse.sandbox_init_point ?? prefResponse.init_point)
-    : (prefResponse.init_point ?? prefResponse.sandbox_init_point)
+  const redirectUrl =
+    (prefResponse.sandbox_init_point ?? prefResponse.init_point) as string
 
   return Response.json({
     order_id: order.id,
