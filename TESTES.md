@@ -83,6 +83,9 @@ app/
     page.tsx
     __tests__/
       page.test.tsx
+      sucesso-page.test.tsx
+      pendente-page.test.tsx
+      falha-page.test.tsx
   sacola/
     page.tsx
     __tests__/
@@ -111,6 +114,7 @@ app/
       checkout.test.ts
       frete.test.ts
       webhook-mercadopago.test.ts
+      payments-verify.test.ts
       admin-products.test.ts
       admin-products-toggle.test.ts
       admin-artisans.test.ts
@@ -129,7 +133,7 @@ app/
 
 ## O que está testado
 
-**Total: 238 testes — todos passando (17 arquivos)**
+**Total: 296 testes — todos passando (21 arquivos)**
 
 ### `app/lib/__tests__/format.test.ts` — 13 testes
 
@@ -395,6 +399,60 @@ Testa o componente `ProdutoForm` quanto ao gerenciamento de memória de `URL.cre
 |---|---|
 | Memory leak | revoga URL anterior ao selecionar nova imagem; revoga URL ao desmontar; não chama revoke sem imagem |
 
+### `app/api/__tests__/payments-verify.test.ts` — 22 testes
+
+Testa o Route Handler `POST /api/payments/verify` com mocks do Mercado Pago SDK e Supabase.
+
+| Grupo | Teste |
+|---|---|
+| Validação de entrada | 400 body JSON inválido; 400 sem payment_id; 400 sem order_id; 400 ambos ausentes |
+| Token | 503 sem MERCADO_PAGO_ACCESS_TOKEN |
+| Erro MP | 502 se API do MP lançar erro |
+| External reference | 403 se external_reference não pertence ao pedido |
+| Atualização de status | paid (approved); pending (pending); pending (in_process); cancelled (rejected); cancelled (cancelled); null para status não mapeado; 500 se update falhar |
+| Restauração de estoque | increment_stock para cada item (rejected/cancelled); não chama em approved/pending; não chama sem itens; loga erro do RPC e continua 200 |
+| Sandbox | Configura sandbox com MERCADO_PAGO_SANDBOX=true |
+| Resposta | corpo com status, mp_status e payment_id |
+
+### `app/checkout/__tests__/sucesso-page.test.tsx` — 11 testes
+
+Testa a página `/checkout/sucesso` com mock de `useSearchParams`, `useCartStore` e `fetch`.
+
+| Grupo | Teste |
+|---|---|
+| Estado inicial | "Verificando pagamento..." ao carregar |
+| Pagamento aprovado | "Pedido confirmado!"; limpa carrinho; exibe número do pedido; link "Continuar comprando" → "/" |
+| Pagamento pendente | "Aguardando confirmação"; não limpa carrinho |
+| Sem query params | "Pedido criado!" (estado de erro); não chama fetch |
+| Falha de rede | "Pedido criado!" |
+| Chamada à API | Envia payment_id e order_id no body |
+
+### `app/checkout/__tests__/pendente-page.test.tsx` — 11 testes
+
+Testa a página `/checkout/pendente` com mock de `useSearchParams`, `useCartStore` e `fetch`.
+
+| Grupo | Teste |
+|---|---|
+| Estado inicial | "Verificando pagamento..." ao carregar |
+| Pagamento aprovado | "Pagamento aprovado!"; limpa carrinho; link "Continuar comprando" |
+| Pagamento pendente | "Aguardando pagamento"; não limpa carrinho; exibe número do pedido; exibe ID do pagamento |
+| Sem query params | "Aguardando pagamento" (fallback para estado pendente) |
+| Falha de rede | "Aguardando pagamento" (.catch → pending) |
+| Chamada à API | Envia payment_id e order_id no body |
+
+### `app/checkout/__tests__/falha-page.test.tsx` — 13 testes
+
+Testa a página `/checkout/falha` com mock de `useSearchParams`, `useCartStore` e `fetch`.
+
+| Grupo | Teste |
+|---|---|
+| Estado inicial | "Verificando pagamento..." ao carregar |
+| Pagamento aprovado | "Pagamento aprovado!"; limpa carrinho; exibe número do pedido; link "Continuar comprando" |
+| Pagamento falhou | "Pagamento não aprovado"; não limpa carrinho; link "Tentar novamente" → "/sacola"; link "Voltar à loja" → "/"; exibe ID do pagamento |
+| Sem query params | "Pagamento não aprovado" |
+| Falha de rede | "Pagamento não aprovado" (.catch → failed) |
+| Chamada à API | Envia payment_id e order_id no body |
+
 ### `app/admin/lib/__tests__/orderTotals.test.ts` — 6 testes
 
 Testa as funções utilitárias `getOrderTotal` e `getOrderProductsSubtotal`.
@@ -417,6 +475,8 @@ Componentes React já estão testados com `@testing-library/react`, `userEvent` 
 - `FreteCalculator` — cálculo, validação de CEP, seleção de opção
 - `ProdutoForm` — memory leak de `URL.createObjectURL`
 - Páginas `Sacola` e `Checkout` — renderização, formulário, submissão
+- Páginas de retorno `sucesso`, `pendente`, `falha` — verificação de pagamento, estados verifying/paid/pending/failed
+- `POST /api/payments/verify` — consulta MP, atualização de status, restauração de estoque
 
 ### Próximas oportunidades de teste
 
