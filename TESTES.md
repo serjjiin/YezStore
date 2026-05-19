@@ -133,7 +133,7 @@ app/
 
 ## O que está testado
 
-**Total: 296 testes — todos passando (21 arquivos)**
+**Total: 301 testes — todos passando (21 arquivos)**
 
 ### `app/lib/__tests__/format.test.ts` — 13 testes
 
@@ -230,7 +230,7 @@ Sem isso, o estado de um teste vazaria para o próximo.
 
 ---
 
-### `app/api/__tests__/checkout.test.ts` — 18 testes
+### `app/api/__tests__/checkout.test.ts` — 31 testes
 
 Testa o Route Handler `POST /api/checkout` com mocks de Supabase e Mercado Pago.
 
@@ -238,12 +238,15 @@ Testa o Route Handler `POST /api/checkout` com mocks de Supabase e Mercado Pago.
 
 | Grupo | Teste |
 |---|---|
-| Validação de entrada | 400 sem `customer.name`, sem `customer.email`, sem `items` |
-| Erro no banco | 500 se Supabase falhar ao criar pedido |
-| Sem MP configurado | 503 sem `MERCADO_PAGO_ACCESS_TOKEN` |
-| Sucesso | 200 com `order_id`, `init_point`; itens criados corretamente |
+| Validação de entrada | 400 sem `customer.name`, sem `customer.email`, sem `items`, sem `customer.cpf` |
+| Erro no banco | 500 se Supabase falhar ao criar pedido; 500 se order_items falhar (MP não chamado) |
+| Sem MP configurado | 503 sem `MERCADO_PAGO_ACCESS_TOKEN`; mensagem genérica sem expor nome da env var |
+| Sucesso | 200 com `order_id`, `init_point` (ou sandbox_init_point quando disponível); itens criados corretamente |
 | Segurança — preço | Ignora preço do cliente, usa banco; 400 se produto não existe; 400 se inativo |
-| Validação de estoque | 409 se estoque insuficiente; 409 se estoque zerado; decremento atômico chamado; 409 em corrida (0 linhas atualizadas) |
+| Validação de estoque | 409 se estoque insuficiente; 409 se zerado; decremento atômico chamado; 409 em corrida |
+| Preferência MP — payer completo | `first_name`/`last_name` separados do nome; `address` derivado do `shippingAddress`; fallback de `last_name = first_name` para nomes únicos; CEP normalizado; `street_number` via `parseInt`; `address` ausente quando `shippingAddress` é nulo; ignora múltiplos espaços |
+| Preferência MP — outros campos | items + back_urls + external_reference + statement_descriptor corretos; frete como item separado quando `shipping > 0`; `mp_preference_id` salvo no pedido |
+| Localhost vs produção | Sem `auto_return`/`notification_url` em localhost; ambos em produção; `VERCEL_URL` como fallback em preview |
 
 ---
 
