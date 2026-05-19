@@ -23,6 +23,13 @@ export async function POST(request: Request) {
   const areaCode = phoneDigits.slice(0, 2)
   const phoneNumber = phoneDigits.slice(2)
 
+  // Split de nome para first_name + last_name — quality_checklist do MP
+  // marca como crítico pra reduzir rejeição por antifraude.
+  // Fallback (nome único): repete first_name pra manter campo não-vazio.
+  const nameParts = (customer.name as string).trim().split(/\s+/)
+  const firstName = nameParts[0]
+  const lastName = nameParts.slice(1).join(' ') || firstName
+
   const supabase = createSupabaseServiceClient()
 
   // Busca preços reais do banco — nunca confiar no preço enviado pelo cliente
@@ -140,14 +147,25 @@ export async function POST(request: Request) {
     })
   }
 
+  const payer: Record<string, unknown> = {
+    first_name: firstName,
+    last_name: lastName,
+    email: customer.email,
+    ...(areaCode && phoneNumber ? { phone: { area_code: areaCode, number: phoneNumber } } : {}),
+    identification: { type: 'CPF', number: cpf },
+  }
+
+  if (shippingAddress?.cep) {
+    payer.address = {
+      zip_code: (shippingAddress.cep as string).replace(/\D/g, ''),
+      street_name: shippingAddress.rua,
+      street_number: parseInt(shippingAddress.numero as string, 10) || 0,
+    }
+  }
+
   const preferenceBody = {
     items: mpItems,
-    payer: {
-      name: customer.name,
-      email: customer.email,
-      ...(areaCode && phoneNumber ? { phone: { area_code: areaCode, number: phoneNumber } } : {}),
-      identification: { type: 'CPF', number: cpf },
-    },
+    payer,
     back_urls: {
       success: `${baseUrl}/checkout/sucesso`,
       failure: `${baseUrl}/checkout/falha`,

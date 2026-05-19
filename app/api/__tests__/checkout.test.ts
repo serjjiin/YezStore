@@ -73,7 +73,7 @@ function makeRequest(body: object) {
 }
 
 const validBody = {
-  customer: { name: 'Ana', email: 'ana@test.com', phone: '11999999999', cpf: '52998224725' },
+  customer: { name: 'Ana Silva', email: 'ana@test.com', phone: '11999999999', cpf: '52998224725' },
   items: [{ id: 'prod-1', title: 'Sousplat', price: 50, quantity: 2 }],
   shipping: { id: 1, name: 'PAC', price: '18.50', delivery_time: 7, company: { name: 'Correios' } },
   shippingAddress: { cep: '73086130', rua: 'Rua Teste', numero: '1' },
@@ -357,10 +357,16 @@ describe('POST /api/checkout', () => {
         currency_id: 'BRL',
       })
       expect(prefArg.body.payer).toEqual({
-        name: 'Ana',
+        first_name: 'Ana',
+        last_name: 'Silva',
         email: 'ana@test.com',
         phone: { area_code: '11', number: '999999999' },
         identification: { type: 'CPF', number: '52998224725' },
+        address: {
+          zip_code: '73086130',
+          street_name: 'Rua Teste',
+          street_number: 1,
+        },
       })
       expect(prefArg.body.back_urls).toMatchObject({
         success: expect.stringContaining('/checkout/sucesso'),
@@ -369,6 +375,90 @@ describe('POST /api/checkout', () => {
       })
       expect(prefArg.body.external_reference).toBe('order-uuid')
       expect(prefArg.body.statement_descriptor).toBe('Yez Store')
+    })
+
+    it('separa nome composto: first_name = primeira palavra, last_name = restante', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      const bodyComNomeComposto = {
+        ...validBody,
+        customer: { ...validBody.customer, name: 'Ana Maria Silva Santos' },
+      }
+      await POST(makeRequest(bodyComNomeComposto))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.payer.first_name).toBe('Ana')
+      expect(prefArg.body.payer.last_name).toBe('Maria Silva Santos')
+    })
+
+    it('quando nome tem só uma palavra: last_name = first_name (fallback para evitar rejeição do MP)', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      const bodyComNomeUnico = {
+        ...validBody,
+        customer: { ...validBody.customer, name: 'Madonna' },
+      }
+      await POST(makeRequest(bodyComNomeUnico))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.payer.first_name).toBe('Madonna')
+      expect(prefArg.body.payer.last_name).toBe('Madonna')
+    })
+
+    it('ignora múltiplos espaços no nome ao separar', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      const bodyComEspacosExtras = {
+        ...validBody,
+        customer: { ...validBody.customer, name: '  Ana   Silva  ' },
+      }
+      await POST(makeRequest(bodyComEspacosExtras))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.payer.first_name).toBe('Ana')
+      expect(prefArg.body.payer.last_name).toBe('Silva')
+    })
+
+    it('não envia payer.address quando shippingAddress é nulo', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      const bodySemAddress = { ...validBody, shippingAddress: null }
+      await POST(makeRequest(bodySemAddress))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.payer.address).toBeUndefined()
+    })
+
+    it('normaliza CEP no payer.address (remove caracteres não-numéricos)', async () => {
+      process.env.MERCADO_PAGO_ACCESS_TOKEN = 'TEST-token'
+      const { client } = makeSmartChain()
+      vi.mocked(createSupabaseServiceClient).mockReturnValue(client as unknown as ReturnType<typeof createSupabaseServiceClient>)
+      mockPrefCreate.mockResolvedValue({ id: 'pref-id', init_point: '', sandbox_init_point: '' })
+
+      const bodyCepComHifen = {
+        ...validBody,
+        shippingAddress: { cep: '73086-130', rua: 'Rua Teste', numero: '12A' },
+      }
+      await POST(makeRequest(bodyCepComHifen))
+
+      const prefArg = mockPrefCreate.mock.calls[0][0]
+      expect(prefArg.body.payer.address).toEqual({
+        zip_code: '73086130',
+        street_name: 'Rua Teste',
+        street_number: 12, // parseInt('12A') = 12
+      })
     })
 
     it('adiciona frete como item separado quando shippingCost > 0', async () => {
