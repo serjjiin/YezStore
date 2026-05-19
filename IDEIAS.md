@@ -140,3 +140,37 @@ Referência pra não esquecer:
 A pergunta certa pro futuro: **"quando vender 50+ pedidos/dia, ainda vale manter código?"**. Se sim, fica com a stack atual e investe nas dívidas técnicas (race condition, idempotência, rate limit). Se não, migra pra Shopify e foca em vender.
 
 Antes disso, qualquer migração é prejuízo de tempo e dinheiro.
+
+---
+
+## 6. Limitações conhecidas
+
+### Sandbox MP — cartão não funciona, saldo funciona
+
+**Sintoma:** todo pagamento com cartão de teste no Checkout Pro recusa com erro genérico "Não foi possível processar seu pagamento". Pagamento com saldo MP aprova normalmente.
+
+**Investigado em 2026-05-19** (PRs [#56](https://github.com/serjjiin/YezStore/pull/56), [#66](https://github.com/serjjiin/YezStore/pull/66), tasks #4 e #9). Testamos:
+
+- 5 cartões diferentes (Visa APRO, Master APRO, cartão real, Visa 3DS, Master 3DS) — todos recusam
+- Reset completo de sessão (janela anônima, novo TESTUSER comprador, novo cookie)
+- Payer completo (`first_name`, `last_name`, `address` derivado do shippingAddress) — PR [#66](https://github.com/serjjiin/YezStore/pull/66) mergeado mas não destrava cartão
+- Token de teste correto (confirmado via `application_list` do MCP MP)
+
+**Assinatura única do bug em todos os testes:**
+```
+404 em /checkout/v1/api/bricks/card-form/association
+new_card_flow_migration:true
+Challenge processing via step next → recusa genérica
+```
+
+**Causa raiz (provável):** o Checkout Pro do MP tenta usar endpoints internos do Checkout Bricks pra processar cartão, mas um deles dá 404 consistentemente pra nossa app. Possíveis razões (todas externas):
+
+- Conta MP precisa de homologação adicional pra cartão sandbox
+- App em modo legacy/incompleto no backend do MP
+- Bug do sandbox MP que só suporte resolve
+
+**Decisão:** aceitar a limitação. Validar cartão **em produção real** quando trocar pra token de produção — em produção, MP usa o fluxo legado estável (não tenta migrar pra Bricks). Saldo já valida o fluxo end-to-end (preference → redirect → status → `/api/payments/verify` → admin).
+
+**Não fazer:** migrar pra Checkout Bricks só por causa disso (refactor sério de UX + código), ou criar nova app MP do zero (não há garantia de que resolve).
+
+**Issue acompanhante:** [#14](https://github.com/serjjiin/YezStore/issues/14) — fica aberta com comentário explicando o status; fecha quando confirmarmos cartão em produção.
